@@ -1,0 +1,423 @@
+# Countermeasure Platform - Enterprise .gitignore
+
+# ===========================
+# Python
+# ===========================
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# PyInstaller
+*.manifest
+*.spec
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+cover/
+
+# Translations
+*.mo
+*.pot
+
+# Django
+*.log
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+
+# Flask
+instance/
+.webassets-cache
+
+# Scrapy
+.scrapy
+
+# Sphinx documentation
+docs/_build/
+
+# PyBuilder
+.pybuilder/
+target/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# IPython
+profile_default/
+ipython_config.py
+
+# pyenv
+.python-version
+
+# pipenv
+Pipfile.lock
+
+# poetry
+poetry.lock
+
+# pdm
+.pdm.toml
+.pdm-python
+.pdm-build/
+
+# PEP 582
+__pypackages__/
+
+# Celery
+celerybeat-schedule
+celerybeat.pid
+
+# SageMath parsed files
+*.sage.py
+
+# Spyder project settings
+.spyderproject
+.spyproject
+
+# Rope project settings
+.ropeproject
+
+# mkdocs documentation
+/site
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Pyre type checker
+.pyre/
+
+# pytype static type analyzer
+.pytype/
+
+# Cython debug symbols
+cython_debug/
+
+# ===========================
+# Environment & Configuration
+# ===========================
+.env
+.env.*
+!.env.example
+.venv/
+venv/
+ENV/
+env/
+environment.yml
+.conda/
+
+# UV package manager
+.uv/
+uv.lock
+
+# ===========================
+# Database
+# ===========================
+*.db
+*.sqlite
+*.sqlite3
+*.db-journal
+*.db-wal
+*.db-shm
+
+# PostgreSQL
+pg_data/
+postgres_data/
+
+# Redis
+redis_data/
+dump.rdb
+
+# ===========================
+# Security & Secrets
+# ===========================
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+secrets/
+private_keys/
+certificates/
+.secrets/
+.vault/
+
+# JWT tokens
+*.jwt
+tokens/
+
+# API keys and credentials
+api_keys/
+credentials/
+.credentials
+auth_config.json
+service_account.json
+
+# ===========================
+# Development Tools
+# ===========================
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Vim
+*.swp
+*.swo
+*.tmp
+
+# Emacs
+*~
+\#*\#
+/.emacs.desktop
+/.emacs.desktop.lock
+*.elc
+auto-save-list
+tramp
+.\#*
+
+# ===========================
+# Application Specific
+# ===========================
+# Logs
+logs/
+*.log
+log_*.txt
+app.log
+debug.log
+error.log
+access.log
+audit.log
+
+# Temporary files
+temp/
+tmp/
+*.tmp
+*.temp
+.tmp/
+
+# Cache
+cache/
+.cache/
+*.cache
+
+# Media files (if not needed in repo)
+media/
+uploads/
+static_files/
+
+# ===========================
+# Docker & Container
+# ===========================
+docker-compose.override.yml
+.dockerignore
+Dockerfile.local
+.docker/
+
+# ===========================
+# CI/CD & Deployment
+# ===========================
+.terraform/
+*.tfstate
+*.tfstate.*
+.terraform.lock.hcl
+terraform.tfvars
+terraform.tfvars.json
+
+# Kubernetes
+k8s-secrets/
+*.kubeconfig
+
+# Helm
+charts/*/charts/
+charts/*/requirements.lock
+
+# ===========================
+# Monitoring & Observability
+# ===========================
+prometheus_data/
+grafana_data/
+jaeger_data/
+metrics/
+
+# ===========================
+# Testing
+# ===========================
+.coverage
+htmlcov/
+.pytest_cache/
+test-results/
+test_output/
+screenshots/
+videos/
+
+# Load testing
+results/
+*.jmx.log
+
+# ===========================
+# Data & Storage
+# ===========================
+data/
+datasets/
+models/
+*.csv
+*.json
+*.xml
+*.yaml
+*.yml
+!docker-compose.yml
+!*.example.yml
+!*.template.yml
+
+# Large files
+*.zip
+*.tar.gz
+*.rar
+*.7z
+
+# ===========================
+# IDE & Editor
+# ===========================
+.vscode/settings.json
+.vscode/launch.json
+.vscode/extensions.json
+.vscode/tasks.json
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# ===========================
+# MacOS
+# ===========================
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon
+._*
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+.AppleDB
+.AppleDesktop
+Network Trash Folder
+Temporary Items
+.apdisk
+
+# ===========================
+# Windows
+# ===========================
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+*.stackdump
+[Dd]esktop.ini
+$RECYCLE.BIN/
+*.cab
+*.msi
+*.msix
+*.msm
+*.msp
+*.lnk
+
+# ===========================
+# Linux
+# ===========================
+*~
+.fuse_hidden*
+.directory
+.Trash-*
+.nfs*
+
+# ===========================
+# Application Backups
+# ===========================
+*.bak
+*.backup
+*.old
+*.orig
+backup/
+backups/
+
+# ===========================
+# Performance & Profiling
+# ===========================
+*.prof
+*.pprof
+profiling/
+memory_profiler/
+
+# ===========================
+# Custom Countermeasure
+# ===========================
+# Rule collections (too large for git)
+rule_collections/
+sigma_repo/
+community_rules/
+
+# Customer data (never commit)
+customer_data/
+customer_rules/
+customer_configs/
+
+# Analysis outputs
+analysis_reports/
+coverage_reports/
+posture_assessments/
+
+# Collector temporary files
+collection_cache/
+parsing_temp/
