@@ -6,10 +6,38 @@ Countermeasure is a threat detection confidence platform that ingests, enriches,
 
 ## Architecture
 
+### Current Foundation (Implemented ✅)
+
 ```
 ┌─────────────────┐    ┌──────────────┐    ┌─────────────────┐
 │   Collectors    │───▶│  API Server  │───▶│   Database      │
 │  (SIGMA, etc.)  │    │ (FastAPI)    │    │ (PostgreSQL)    │
+│                 │    │              │    │                 │
+│ • SIGMA Parser  │    │ • JWT Auth   │    │ • Migrations    │
+│ • Data Enricher │    │ • RBAC       │    │ • Multi-tenant  │
+│ • Validator     │    │ • OpenAPI    │    │ • JSONB Fields  │
+└─────────────────┘    └──────────────┘    └─────────────────┘
+```
+
+**What's Working Now:**
+- **Authentication**: JWT tokens, user management, role-based access
+- **Data Collection**: SIGMA rule import from GitHub repository
+- **Data Processing**: Rule parsing, metadata extraction, validation
+- **Database**: PostgreSQL with Alembic migrations, multi-tenant design
+- **API**: FastAPI with automatic OpenAPI documentation
+- **Scripts**: Enterprise import utilities with batch processing
+
+### Enterprise Vision (Planned 📋)
+
+```
+┌─────────────────┐    ┌──────────────┐    ┌─────────────────┐
+│ Advanced        │───▶│ AI-Enhanced  │───▶│ Enterprise      │
+│ Collectors      │    │ API Platform │    │ Storage         │
+│                 │    │              │    │                 │
+│ • SIEM Connectors│   │ • AI Analysis│    │ • Redis Cache   │
+│ • Threat Intel  │    │ • Coverage   │    │ • Search Engine │
+│ • Validation    │    │   Scoring    │    │ • File Storage  │
+│ • Real-time     │    │ • Risk Assess│    │ • Data Lake     │
 └─────────────────┘    └──────────────┘    └─────────────────┘
 ```
 

@@ -20,47 +20,98 @@ Countermeasure transforms how security teams assess their defensive posture by p
 
 ## 🏗️ Architecture Overview
 
+### Current Foundation (Implemented)
+
 ```mermaid
 graph TB
-    subgraph "Free Tier - Community Corpus"
-        A[Community Rules] --> B[Gap Recommendations]
-        B --> C[Public Search]
+    subgraph "Client Layer"
+        UI[Web Interface]
+        API_CLIENTS[API Clients]
     end
 
-    subgraph "Enterprise Tier - Customer Posture Assessment"
-        D[Customer Rule Import] --> E[Rule Analysis Engine]
-        F[Environment Telemetry] --> G[Coverage Calculator]
-        H[Threat Intelligence] --> I[Risk Assessor]
-        J[Validation Data] --> K[Effectiveness Tracker]
-        E --> L[Posture Dashboard]
-        G --> L
-        I --> L
-        K --> L
+    subgraph "API Gateway & Auth ✅"
+        AUTH[JWT Authentication]
+        RBAC[Role-Based Access]
     end
 
-    subgraph "Data Processing Layer"
-        M[Multi-Format Parser] --> N[MITRE Mapper]
-        N --> O[Confidence Scorer]
-        O --> P[Gap Analyzer]
+    subgraph "Application Layer ✅"
+        API[FastAPI Backend]
+        COLLECTOR[Collection Service]
     end
 
-    subgraph "Core Platform"
-        Q[FastAPI Backend] --> R[PostgreSQL Database]
-        R --> S[Multi-Tenant Security]
-        S --> T[Customer Data Isolation]
+    subgraph "Data Processing ✅"
+        PARSER[SIGMA Parser]
+        ENRICHER[Metadata Enricher]
+        VALIDATOR[Data Validator]
     end
 
-    D --> M
-    F --> M
-    H --> M
-    J --> M
-    A --> P
-    L --> Q
+    subgraph "Storage Layer ✅"
+        DB[(PostgreSQL)]
+        MIGRATIONS[Alembic Migrations]
+    end
 
-    style A fill:#e1f5fe
-    style D fill:#f3e5f5
-    style L fill:#e8f5e8
-    style Q fill:#fff3e0
+    subgraph "External Sources ✅"
+        SIGMA[SIGMA Repository]
+        MITRE[MITRE ATT&CK Data]
+    end
+
+    UI -.-> AUTH
+    API_CLIENTS --> AUTH
+    AUTH --> RBAC
+    RBAC --> API
+
+    API --> COLLECTOR
+    COLLECTOR --> PARSER
+    PARSER --> ENRICHER
+    ENRICHER --> VALIDATOR
+    VALIDATOR --> DB
+
+    API --> DB
+    API --> MIGRATIONS
+
+    COLLECTOR --> SIGMA
+    COLLECTOR --> MITRE
+
+    style API fill:#e8f5e8
+    style DB fill:#fff3e0
+    style AUTH fill:#e1f5fe
+    style SIGMA fill:#f3e5f5
+```
+
+### Planned Enterprise Features (Roadmap)
+
+```mermaid
+graph TB
+    subgraph "Enhanced Processing 🔄"
+        AI[AI Intelligence Service]
+        SEARCH[Search Engine]
+        CACHE[(Redis Cache)]
+    end
+
+    subgraph "Enterprise Integrations 📋"
+        SPLUNK[Splunk Connector]
+        SENTINEL[Sentinel Connector]
+        SSO[SSO/SAML Auth]
+    end
+
+    subgraph "Advanced Analytics 📊"
+        COVERAGE[Coverage Calculator]
+        RISK[Risk Assessor]
+        DASHBOARD[Posture Dashboard]
+    end
+
+    AI -.-> SEARCH
+    SEARCH -.-> CACHE
+
+    SSO -.-> SPLUNK
+    SSO -.-> SENTINEL
+
+    COVERAGE -.-> RISK
+    RISK -.-> DASHBOARD
+
+    style AI fill:#fff3e0,stroke-dasharray: 5 5
+    style COVERAGE fill:#f3e5f5,stroke-dasharray: 5 5
+    style SSO fill:#e1f5fe,stroke-dasharray: 5 5
 ```
 
 ## 🚀 Quick Start
@@ -179,12 +230,13 @@ curl -H "Authorization: Bearer <your-token>" \
 
 ## 🎨 Business Model
 
-### Free Tier - Community Corpus Only
-- Access to 10,000+ community SIGMA rules
-- Basic search and filtering
-- Export community rules (JSON, YAML)
-- Gap recommendation viewing
-- Rate-limited API access (100 requests/hour)
+### Free Tier - Community Access (Current Implementation)
+- Access to imported SIGMA rules from community repository
+- Basic search and filtering via REST API
+- Export capabilities (JSON format via API)
+- View rule metadata (platforms, data sources, MITRE mapping)
+- Rate-limited API access
+- JWT authentication for secure access
 
 ### Paid Tier - Security Posture Assessment
 
@@ -354,11 +406,13 @@ We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) f
 
 ## 🗺️ Roadmap
 
-### Phase 1: Foundation ✅
-- Multi-tenant authentication system
-- Basic detection CRUD operations
-- Community rules import (SIGMA)
-- PostgreSQL with migrations
+### Phase 1: Foundation ✅ (Current)
+- Multi-tenant authentication system (JWT, RBAC)
+- Detection CRUD operations with full API
+- SIGMA rule import from GitHub repository
+- PostgreSQL with Alembic migrations
+- Structured metadata extraction (platforms, data sources, MITRE mapping)
+- Enterprise import scripts with batch processing
 
 ### Phase 2: Customer Intelligence (Q1 2024)
 - Private ruleset management
