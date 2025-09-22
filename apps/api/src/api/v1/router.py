@@ -4,7 +4,7 @@ Main API router for v1 endpoints.
 
 from fastapi import APIRouter
 
-from .endpoints import auth, actors, detections
+from .endpoints import auth, actors, detections, mitre
 
 # Create main API router
 api_router = APIRouter()
@@ -26,6 +26,12 @@ api_router.include_router(
     detections.router,
     prefix="/detections",
     tags=["Detections"]
+)
+
+api_router.include_router(
+    mitre.router,
+    prefix="/mitre",
+    tags=["MITRE ATT&CK"]
 )
 # api_router.include_router(intelligence.router, prefix="/intelligence", tags=["Intelligence"])
 # api_router.include_router(tenants.router, prefix="/tenants", tags=["Tenants"])

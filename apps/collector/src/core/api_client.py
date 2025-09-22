@@ -339,6 +339,64 @@ class CountermeasureClient:
             logger.error(f"Error deleting detection {detection_id}: {str(e)}")
             return False
 
+    async def post(self, url: str, json: Any = None) -> Optional[Dict[str, Any]]:
+        """
+        Make a POST request to the API.
+
+        Args:
+            url: API endpoint URL (relative to base URL)
+            json: JSON data to send
+
+        Returns:
+            Response data if successful, None otherwise
+        """
+        try:
+            full_url = f"{self.base_url}{url}"
+            response = await self.client.post(
+                full_url,
+                headers=self._get_auth_headers(),
+                json=json
+            )
+
+            if response.status_code in [200, 201]:
+                return response.json()
+            else:
+                logger.error(f"POST {url} failed: {response.status_code} - {response.text}")
+                return None
+
+        except Exception as e:
+            logger.error(f"Error in POST {url}: {str(e)}")
+            return None
+
+    async def get(self, url: str, params: Dict[str, Any] = None) -> Optional[Dict[str, Any]]:
+        """
+        Make a GET request to the API.
+
+        Args:
+            url: API endpoint URL (relative to base URL)
+            params: Query parameters
+
+        Returns:
+            Response data if successful, None otherwise
+        """
+        try:
+            full_url = f"{self.base_url}{url}"
+            response = await self.client.get(
+                full_url,
+                headers=self._get_auth_headers(),
+                params=params
+            )
+
+            if response.status_code == 200:
+                return response.json()
+            else:
+                logger.error(f"GET {url} failed: {response.status_code} - {response.text}")
+                return None
+
+        except Exception as e:
+            logger.error(f"Error in GET {url}: {str(e)}")
+            return None
+
     async def close(self):
         """Close the HTTP client."""
         await self.client.aclose()
