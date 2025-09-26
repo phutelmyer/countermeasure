@@ -2,7 +2,7 @@
 Rule confidence scoring implementation.
 """
 
-from typing import List
+
 from src.db.models import Detection
 
 
@@ -22,9 +22,11 @@ def calculate_rule_confidence_score(detection: Detection) -> float:
     completeness_fields = [
         detection.description,
         detection.author,
-        detection.source_url
+        detection.source_url,
     ]
-    completeness = sum(1 for field in completeness_fields if field) / len(completeness_fields)
+    completeness = sum(1 for field in completeness_fields if field) / len(
+        completeness_fields
+    )
     factors.append(completeness * 0.3)
 
     # MITRE mapping (25% weight)
@@ -36,12 +38,7 @@ def calculate_rule_confidence_score(detection: Detection) -> float:
     factors.append(category_score * 0.2)
 
     # Community validation and status (25% weight)
-    status_scores = {
-        "active": 1.0,
-        "testing": 0.7,
-        "draft": 0.3,
-        "deprecated": 0.1
-    }
+    status_scores = {"active": 1.0, "testing": 0.7, "draft": 0.3, "deprecated": 0.1}
     validation_score = status_scores.get(detection.status, 0.5)
     factors.append(validation_score * 0.25)
 
@@ -144,7 +141,7 @@ def _calculate_network_rule_quality(content: str) -> float:
     return min(1.0, score)
 
 
-def validate_rule_format(rule_content: str, rule_format: str) -> tuple[bool, List[str]]:
+def validate_rule_format(rule_content: str, rule_format: str) -> tuple[bool, list[str]]:
     """
     Validate rule content for format-specific syntax.
 
@@ -171,14 +168,14 @@ def validate_rule_format(rule_content: str, rule_format: str) -> tuple[bool, Lis
     return len(errors) == 0, errors
 
 
-def _validate_yara_syntax(content: str) -> List[str]:
+def _validate_yara_syntax(content: str) -> list[str]:
     """Validate YARA rule syntax."""
     errors = []
 
     if "rule " not in content:
         errors.append("YARA rule must contain 'rule' keyword")
 
-    if not ('{' in content and '}' in content):
+    if not ("{" in content and "}" in content):
         errors.append("YARA rule must have opening and closing braces")
 
     if "condition:" not in content:
@@ -187,7 +184,7 @@ def _validate_yara_syntax(content: str) -> List[str]:
     return errors
 
 
-def _validate_sigma_syntax(content: str) -> List[str]:
+def _validate_sigma_syntax(content: str) -> list[str]:
     """Validate Sigma rule syntax."""
     errors = []
 
@@ -199,12 +196,14 @@ def _validate_sigma_syntax(content: str) -> List[str]:
     return errors
 
 
-def _validate_network_rule_syntax(content: str) -> List[str]:
+def _validate_network_rule_syntax(content: str) -> list[str]:
     """Validate network rule syntax."""
     errors = []
 
     if not any(action in content for action in ["alert", "drop", "reject", "pass"]):
-        errors.append("Network rule must start with an action (alert, drop, reject, pass)")
+        errors.append(
+            "Network rule must start with an action (alert, drop, reject, pass)"
+        )
 
     if "msg:" not in content:
         errors.append("Network rule should contain 'msg:' field")

@@ -2,23 +2,28 @@
 MITRE ATT&CK framework API endpoints.
 """
 
-from typing import List, Optional
-from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, delete
-from sqlalchemy.orm import selectinload
 
-from src.db.session import get_db
+from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy import delete, select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from src.api.v1.dependencies.auth import get_current_user
+from src.core.logging import get_logger
 from src.db.models.framework.mitre import MitreTactic, MitreTechnique
 from src.db.models.intel.actor import Actor
-from src.schemas.framework.mitre import (
-    MitreTacticCreate, MitreTacticUpdate, MitreTacticResponse,
-    MitreTechniqueCreate, MitreTechniqueUpdate, MitreTechniqueResponse,
-    MitreActorGroupCreate, MitreActorGroupResponse
-)
-from src.api.v1.dependencies.auth import get_current_user
 from src.db.models.system import User
-from src.core.logging import get_logger
+from src.db.session import get_db
+from src.schemas.framework.mitre import (
+    MitreActorGroupCreate,
+    MitreActorGroupResponse,
+    MitreTacticCreate,
+    MitreTacticResponse,
+    MitreTacticUpdate,
+    MitreTechniqueCreate,
+    MitreTechniqueResponse,
+    MitreTechniqueUpdate,
+)
+
 
 logger = get_logger(__name__)
 
@@ -26,11 +31,13 @@ router = APIRouter()
 
 
 # MITRE Tactics Endpoints
-@router.post("/tactics", response_model=MitreTacticResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/tactics", response_model=MitreTacticResponse, status_code=status.HTTP_201_CREATED
+)
 async def create_tactic(
     tactic: MitreTacticCreate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     """Create a new MITRE tactic."""
 
@@ -41,7 +48,7 @@ async def create_tactic(
     if existing.scalar_one_or_none():
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail=f"Tactic with ID {tactic.tactic_id} already exists"
+            detail=f"Tactic with ID {tactic.tactic_id} already exists",
         )
 
     db_tactic = MitreTactic(**tactic.dict())
@@ -53,20 +60,17 @@ async def create_tactic(
     return db_tactic
 
 
-@router.get("/tactics", response_model=List[MitreTacticResponse])
+@router.get("/tactics", response_model=list[MitreTacticResponse])
 async def list_tactics(
     skip: int = 0,
     limit: int = 100,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     """List all MITRE tactics."""
 
     result = await db.execute(
-        select(MitreTactic)
-        .offset(skip)
-        .limit(limit)
-        .order_by(MitreTactic.tactic_id)
+        select(MitreTactic).offset(skip).limit(limit).order_by(MitreTactic.tactic_id)
     )
     tactics = result.scalars().all()
     return tactics
@@ -76,7 +80,7 @@ async def list_tactics(
 async def get_tactic(
     tactic_id: str,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     """Get a specific MITRE tactic by ID."""
 
@@ -88,7 +92,7 @@ async def get_tactic(
     if not tactic:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Tactic {tactic_id} not found"
+            detail=f"Tactic {tactic_id} not found",
         )
 
     return tactic
@@ -99,7 +103,7 @@ async def update_tactic(
     tactic_id: str,
     tactic_update: MitreTacticUpdate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     """Update a MITRE tactic."""
 
@@ -111,7 +115,7 @@ async def update_tactic(
     if not tactic:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Tactic {tactic_id} not found"
+            detail=f"Tactic {tactic_id} not found",
         )
 
     # Update fields
@@ -126,22 +130,28 @@ async def update_tactic(
 
 
 # MITRE Techniques Endpoints
-@router.post("/techniques", response_model=MitreTechniqueResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/techniques",
+    response_model=MitreTechniqueResponse,
+    status_code=status.HTTP_201_CREATED,
+)
 async def create_technique(
     technique: MitreTechniqueCreate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     """Create a new MITRE technique."""
 
     # Check if technique already exists
     existing = await db.execute(
-        select(MitreTechnique).where(MitreTechnique.technique_id == technique.technique_id)
+        select(MitreTechnique).where(
+            MitreTechnique.technique_id == technique.technique_id
+        )
     )
     if existing.scalar_one_or_none():
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail=f"Technique with ID {technique.technique_id} already exists"
+            detail=f"Technique with ID {technique.technique_id} already exists",
         )
 
     db_technique = MitreTechnique(**technique.dict())
@@ -153,13 +163,13 @@ async def create_technique(
     return db_technique
 
 
-@router.get("/techniques", response_model=List[MitreTechniqueResponse])
+@router.get("/techniques", response_model=list[MitreTechniqueResponse])
 async def list_techniques(
     skip: int = 0,
     limit: int = 100,
-    tactic_id: Optional[str] = None,
+    tactic_id: str | None = None,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     """List MITRE techniques, optionally filtered by tactic."""
 
@@ -179,7 +189,7 @@ async def list_techniques(
 async def get_technique(
     technique_id: str,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     """Get a specific MITRE technique by ID."""
 
@@ -191,7 +201,7 @@ async def get_technique(
     if not technique:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Technique {technique_id} not found"
+            detail=f"Technique {technique_id} not found",
         )
 
     return technique
@@ -202,7 +212,7 @@ async def update_technique(
     technique_id: str,
     technique_update: MitreTechniqueUpdate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     """Update a MITRE technique."""
 
@@ -214,7 +224,7 @@ async def update_technique(
     if not technique:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Technique {technique_id} not found"
+            detail=f"Technique {technique_id} not found",
         )
 
     # Update fields
@@ -229,25 +239,29 @@ async def update_technique(
 
 
 # Actor Groups (MITRE Groups) Endpoints
-@router.post("/groups", response_model=MitreActorGroupResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/groups",
+    response_model=MitreActorGroupResponse,
+    status_code=status.HTTP_201_CREATED,
+)
 async def create_actor_group(
     group: MitreActorGroupCreate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     """Create a new MITRE actor group."""
 
     # Check if actor already exists by name or MITRE ID
     existing = await db.execute(
         select(Actor).where(
-            (Actor.name == group.name) |
-            (Actor.mitre_attack_id == group.mitre_attack_id)
+            (Actor.name == group.name)
+            | (Actor.mitre_attack_id == group.mitre_attack_id)
         )
     )
     if existing.scalar_one_or_none():
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail=f"Actor group with name '{group.name}' or MITRE ID '{group.mitre_attack_id}' already exists"
+            detail=f"Actor group with name '{group.name}' or MITRE ID '{group.mitre_attack_id}' already exists",
         )
 
     # Create actor from MITRE group data
@@ -259,7 +273,7 @@ async def create_actor_group(
         "stix_uuid": group.stix_uuid,
         "references": group.references,
         "tenant_id": current_user.tenant_id,
-        "created_by_id": current_user.id
+        "created_by_id": current_user.id,
     }
 
     db_actor = Actor(**actor_data)
@@ -271,12 +285,12 @@ async def create_actor_group(
     return db_actor
 
 
-@router.get("/groups", response_model=List[MitreActorGroupResponse])
+@router.get("/groups", response_model=list[MitreActorGroupResponse])
 async def list_actor_groups(
     skip: int = 0,
     limit: int = 100,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     """List all MITRE actor groups."""
 
@@ -296,7 +310,7 @@ async def list_actor_groups(
 async def get_actor_group(
     mitre_id: str,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     """Get a specific MITRE actor group by MITRE ATT&CK ID."""
 
@@ -310,7 +324,7 @@ async def get_actor_group(
     if not actor:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"MITRE actor group {mitre_id} not found"
+            detail=f"MITRE actor group {mitre_id} not found",
         )
 
     return actor
@@ -319,9 +333,9 @@ async def get_actor_group(
 # Bulk Operations
 @router.post("/tactics/bulk", status_code=status.HTTP_201_CREATED)
 async def bulk_create_tactics(
-    tactics: List[MitreTacticCreate],
+    tactics: list[MitreTacticCreate],
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     """Bulk create MITRE tactics."""
 
@@ -348,19 +362,21 @@ async def bulk_create_tactics(
 
     await db.commit()
 
-    logger.info(f"Bulk tactics operation: {created_count} created, {updated_count} updated")
+    logger.info(
+        f"Bulk tactics operation: {created_count} created, {updated_count} updated"
+    )
     return {
         "message": f"Processed {len(tactics)} tactics",
         "created": created_count,
-        "updated": updated_count
+        "updated": updated_count,
     }
 
 
 @router.post("/techniques/bulk", status_code=status.HTTP_201_CREATED)
 async def bulk_create_techniques(
-    techniques: List[MitreTechniqueCreate],
+    techniques: list[MitreTechniqueCreate],
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     """Bulk create MITRE techniques."""
 
@@ -370,7 +386,9 @@ async def bulk_create_techniques(
     for technique_data in techniques:
         # Check if technique exists
         existing = await db.execute(
-            select(MitreTechnique).where(MitreTechnique.technique_id == technique_data.technique_id)
+            select(MitreTechnique).where(
+                MitreTechnique.technique_id == technique_data.technique_id
+            )
         )
         existing_technique = existing.scalar_one_or_none()
 
@@ -387,19 +405,21 @@ async def bulk_create_techniques(
 
     await db.commit()
 
-    logger.info(f"Bulk techniques operation: {created_count} created, {updated_count} updated")
+    logger.info(
+        f"Bulk techniques operation: {created_count} created, {updated_count} updated"
+    )
     return {
         "message": f"Processed {len(techniques)} techniques",
         "created": created_count,
-        "updated": updated_count
+        "updated": updated_count,
     }
 
 
 @router.post("/groups/bulk", status_code=status.HTTP_201_CREATED)
 async def bulk_create_groups(
-    groups: List[MitreActorGroupCreate],
+    groups: list[MitreActorGroupCreate],
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     """Bulk create MITRE actor groups."""
 
@@ -410,8 +430,8 @@ async def bulk_create_groups(
         # Check if actor exists
         existing = await db.execute(
             select(Actor).where(
-                (Actor.mitre_attack_id == group_data.mitre_attack_id) &
-                (Actor.tenant_id == current_user.tenant_id)
+                (Actor.mitre_attack_id == group_data.mitre_attack_id)
+                & (Actor.tenant_id == current_user.tenant_id)
             )
         )
         existing_actor = existing.scalar_one_or_none()
@@ -423,7 +443,7 @@ async def bulk_create_groups(
                 "description": group_data.description,
                 "aliases": group_data.aliases,
                 "stix_uuid": group_data.stix_uuid,
-                "references": group_data.references
+                "references": group_data.references,
             }
             for field, value in actor_fields.items():
                 setattr(existing_actor, field, value)
@@ -438,7 +458,7 @@ async def bulk_create_groups(
                 "stix_uuid": group_data.stix_uuid,
                 "references": group_data.references,
                 "tenant_id": current_user.tenant_id,
-                "created_by_id": current_user.id
+                "created_by_id": current_user.id,
             }
             db_actor = Actor(**actor_data)
             db.add(db_actor)
@@ -446,11 +466,13 @@ async def bulk_create_groups(
 
     await db.commit()
 
-    logger.info(f"Bulk groups operation: {created_count} created, {updated_count} updated")
+    logger.info(
+        f"Bulk groups operation: {created_count} created, {updated_count} updated"
+    )
     return {
         "message": f"Processed {len(groups)} groups",
         "created": created_count,
-        "updated": updated_count
+        "updated": updated_count,
     }
 
 
@@ -459,7 +481,7 @@ async def bulk_create_groups(
 async def import_mitre_data(
     data: dict,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     """
     Unified MITRE data import endpoint that handles dependencies properly.
@@ -479,12 +501,12 @@ async def import_mitre_data(
     results = {
         "tactics": {"created": 0, "updated": 0},
         "techniques": {"created": 0, "updated": 0},
-        "groups": {"created": 0, "updated": 0}
+        "groups": {"created": 0, "updated": 0},
     }
 
     try:
         # Step 1: Import tactics first (no dependencies)
-        if "tactics" in data and data["tactics"]:
+        if data.get("tactics"):
             logger.info(f"Importing {len(data['tactics'])} tactics...")
 
             for tactic_data in data["tactics"]:
@@ -511,10 +533,12 @@ async def import_mitre_data(
                     total_created += 1
 
             await db.commit()
-            logger.info(f"Tactics imported: {results['tactics']['created']} created, {results['tactics']['updated']} updated")
+            logger.info(
+                f"Tactics imported: {results['tactics']['created']} created, {results['tactics']['updated']} updated"
+            )
 
         # Step 2: Import techniques (depends on tactics)
-        if "techniques" in data and data["techniques"]:
+        if data.get("techniques"):
             logger.info(f"Importing {len(data['techniques'])} techniques...")
 
             for technique_data in data["techniques"]:
@@ -523,7 +547,9 @@ async def import_mitre_data(
 
                 # Check if technique exists
                 existing = await db.execute(
-                    select(MitreTechnique).where(MitreTechnique.technique_id == technique.technique_id)
+                    select(MitreTechnique).where(
+                        MitreTechnique.technique_id == technique.technique_id
+                    )
                 )
                 existing_technique = existing.scalar_one_or_none()
 
@@ -541,10 +567,12 @@ async def import_mitre_data(
                     total_created += 1
 
             await db.commit()
-            logger.info(f"Techniques imported: {results['techniques']['created']} created, {results['techniques']['updated']} updated")
+            logger.info(
+                f"Techniques imported: {results['techniques']['created']} created, {results['techniques']['updated']} updated"
+            )
 
         # Step 3: Import groups (no dependencies on tactics/techniques)
-        if "groups" in data and data["groups"]:
+        if data.get("groups"):
             logger.info(f"Importing {len(data['groups'])} groups...")
 
             for group_data in data["groups"]:
@@ -554,8 +582,8 @@ async def import_mitre_data(
                 # Check if actor exists
                 existing = await db.execute(
                     select(Actor).where(
-                        (Actor.mitre_attack_id == group.mitre_attack_id) &
-                        (Actor.tenant_id == current_user.tenant_id)
+                        (Actor.mitre_attack_id == group.mitre_attack_id)
+                        & (Actor.tenant_id == current_user.tenant_id)
                     )
                 )
                 existing_actor = existing.scalar_one_or_none()
@@ -567,7 +595,7 @@ async def import_mitre_data(
                         "description": group.description,
                         "aliases": group.aliases,
                         "stix_uuid": group.stix_uuid,
-                        "references": group.references
+                        "references": group.references,
                     }
                     for field, value in actor_fields.items():
                         setattr(existing_actor, field, value)
@@ -584,7 +612,7 @@ async def import_mitre_data(
                         "references": group.references,
                         "actor_type": "group",
                         "tenant_id": current_user.tenant_id,
-                        "created_by": current_user.id
+                        "created_by": current_user.id,
                     }
                     db_actor = Actor(**actor_data)
                     db.add(db_actor)
@@ -592,31 +620,34 @@ async def import_mitre_data(
                     total_created += 1
 
             await db.commit()
-            logger.info(f"Groups imported: {results['groups']['created']} created, {results['groups']['updated']} updated")
+            logger.info(
+                f"Groups imported: {results['groups']['created']} created, {results['groups']['updated']} updated"
+            )
 
-        logger.info(f"MITRE import completed: {total_created} total created, {total_updated} total updated")
+        logger.info(
+            f"MITRE import completed: {total_created} total created, {total_updated} total updated"
+        )
 
         return {
-            "message": f"MITRE data import completed successfully",
+            "message": "MITRE data import completed successfully",
             "total_created": total_created,
             "total_updated": total_updated,
-            "details": results
+            "details": results,
         }
 
     except Exception as e:
-        logger.error(f"MITRE import failed: {str(e)}")
+        logger.error(f"MITRE import failed: {e!s}")
         await db.rollback()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Import failed: {str(e)}"
+            detail=f"Import failed: {e!s}",
         )
 
 
 # Utility endpoints
 @router.delete("/tactics/clear", status_code=status.HTTP_204_NO_CONTENT)
 async def clear_all_tactics(
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)
 ):
     """Clear all MITRE tactics. Use with caution."""
 
@@ -628,8 +659,7 @@ async def clear_all_tactics(
 
 @router.delete("/techniques/clear", status_code=status.HTTP_204_NO_CONTENT)
 async def clear_all_techniques(
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)
 ):
     """Clear all MITRE techniques. Use with caution."""
 

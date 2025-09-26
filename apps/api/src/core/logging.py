@@ -7,18 +7,21 @@ import logging
 import sys
 import uuid
 from contextvars import ContextVar
-from typing import Any, Dict, Optional
+from typing import Any
 
 import structlog
 from structlog.typing import EventDict, Processor
 
 from .config import settings
 
+
 # Context variable for request correlation ID
-correlation_id: ContextVar[Optional[str]] = ContextVar("correlation_id", default=None)
+correlation_id: ContextVar[str | None] = ContextVar("correlation_id", default=None)
 
 
-def add_correlation_id(logger: Any, method_name: str, event_dict: EventDict) -> EventDict:
+def add_correlation_id(
+    logger: Any, method_name: str, event_dict: EventDict
+) -> EventDict:
     """Add correlation ID to log entries."""
     current_correlation_id = correlation_id.get()
     if current_correlation_id:
@@ -26,7 +29,9 @@ def add_correlation_id(logger: Any, method_name: str, event_dict: EventDict) -> 
     return event_dict
 
 
-def add_security_context(logger: Any, method_name: str, event_dict: EventDict) -> EventDict:
+def add_security_context(
+    logger: Any, method_name: str, event_dict: EventDict
+) -> EventDict:
     """Add security context to log entries."""
     # Don't log sensitive fields
     sensitive_fields = {
@@ -41,7 +46,7 @@ def add_security_context(logger: Any, method_name: str, event_dict: EventDict) -
     }
 
     # Recursively sanitize event dictionary
-    def sanitize_dict(d: Dict[str, Any]) -> Dict[str, Any]:
+    def sanitize_dict(d: dict[str, Any]) -> dict[str, Any]:
         sanitized = {}
         for key, value in d.items():
             lower_key = key.lower()
@@ -77,15 +82,15 @@ def setup_logging() -> None:
 
     if settings.is_development:
         # Development: Pretty console output
-        processors.extend([
-            structlog.dev.ConsoleRenderer(colors=True)
-        ])
+        processors.extend([structlog.dev.ConsoleRenderer(colors=True)])
     else:
         # Production: JSON output
-        processors.extend([
-            structlog.processors.TimeStamper(fmt="iso"),
-            structlog.processors.JSONRenderer()
-        ])
+        processors.extend(
+            [
+                structlog.processors.TimeStamper(fmt="iso"),
+                structlog.processors.JSONRenderer(),
+            ]
+        )
 
     # Configure structlog
     structlog.configure(
@@ -116,7 +121,7 @@ def get_logger(name: str) -> structlog.BoundLogger:
     return structlog.get_logger(name)
 
 
-def set_correlation_id(request_id: Optional[str] = None) -> str:
+def set_correlation_id(request_id: str | None = None) -> str:
     """Set correlation ID for the current context."""
     if request_id is None:
         request_id = str(uuid.uuid4())
@@ -124,7 +129,7 @@ def set_correlation_id(request_id: Optional[str] = None) -> str:
     return request_id
 
 
-def get_correlation_id() -> Optional[str]:
+def get_correlation_id() -> str | None:
     """Get current correlation ID."""
     return correlation_id.get()
 
@@ -136,12 +141,12 @@ audit_logger = structlog.get_logger("audit")
 def audit_log(
     action: str,
     resource: str,
-    user_id: Optional[str] = None,
-    tenant_id: Optional[str] = None,
-    ip_address: Optional[str] = None,
-    user_agent: Optional[str] = None,
+    user_id: str | None = None,
+    tenant_id: str | None = None,
+    ip_address: str | None = None,
+    user_agent: str | None = None,
     success: bool = True,
-    details: Optional[Dict[str, Any]] = None,
+    details: dict[str, Any] | None = None,
 ) -> None:
     """Log security-relevant events for audit purposes."""
     audit_logger.info(

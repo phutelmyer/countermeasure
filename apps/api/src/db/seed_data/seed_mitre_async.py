@@ -3,12 +3,13 @@ Async version of MITRE ATT&CK data seeding.
 """
 
 from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.core.logging import get_logger
 from src.db.models import MitreTactic, MitreTechnique, Severity
 from src.db.session import get_db_context
+
 from .mitre_data import MITRE_TACTICS, MITRE_TECHNIQUES, SEVERITY_LEVELS
+
 
 logger = get_logger(__name__)
 
@@ -34,7 +35,9 @@ async def seed_severities_async() -> None:
                     logger.info("severity_exists", name=severity_data["name"])
 
             except Exception as e:
-                logger.warning("severity_add_failed", name=severity_data["name"], error=str(e))
+                logger.warning(
+                    "severity_add_failed", name=severity_data["name"], error=str(e)
+                )
                 await db.rollback()
                 continue
 
@@ -55,19 +58,29 @@ async def seed_mitre_tactics_async() -> None:
             try:
                 # Check if tactic already exists
                 result = await db.execute(
-                    select(MitreTactic).where(MitreTactic.tactic_id == tactic_data["tactic_id"])
+                    select(MitreTactic).where(
+                        MitreTactic.tactic_id == tactic_data["tactic_id"]
+                    )
                 )
                 existing = result.scalar_one_or_none()
 
                 if not existing:
                     tactic = MitreTactic(**tactic_data)
                     db.add(tactic)
-                    logger.info("tactic_added", tactic_id=tactic_data["tactic_id"], name=tactic_data["name"])
+                    logger.info(
+                        "tactic_added",
+                        tactic_id=tactic_data["tactic_id"],
+                        name=tactic_data["name"],
+                    )
                 else:
                     logger.info("tactic_exists", tactic_id=tactic_data["tactic_id"])
 
             except Exception as e:
-                logger.warning("tactic_add_failed", tactic_id=tactic_data["tactic_id"], error=str(e))
+                logger.warning(
+                    "tactic_add_failed",
+                    tactic_id=tactic_data["tactic_id"],
+                    error=str(e),
+                )
                 await db.rollback()
                 continue
 
@@ -84,8 +97,12 @@ async def seed_mitre_techniques_async() -> None:
     logger.info("Seeding MITRE ATT&CK techniques...")
 
     # First, seed parent techniques (those without parent_technique_id)
-    parent_techniques = [t for t in MITRE_TECHNIQUES if t["parent_technique_id"] is None]
-    sub_techniques = [t for t in MITRE_TECHNIQUES if t["parent_technique_id"] is not None]
+    parent_techniques = [
+        t for t in MITRE_TECHNIQUES if t["parent_technique_id"] is None
+    ]
+    sub_techniques = [
+        t for t in MITRE_TECHNIQUES if t["parent_technique_id"] is not None
+    ]
 
     async with get_db_context() as db:
         # Seed parent techniques first
@@ -93,19 +110,31 @@ async def seed_mitre_techniques_async() -> None:
             try:
                 # Check if technique already exists
                 result = await db.execute(
-                    select(MitreTechnique).where(MitreTechnique.technique_id == technique_data["technique_id"])
+                    select(MitreTechnique).where(
+                        MitreTechnique.technique_id == technique_data["technique_id"]
+                    )
                 )
                 existing = result.scalar_one_or_none()
 
                 if not existing:
                     technique = MitreTechnique(**technique_data)
                     db.add(technique)
-                    logger.info("technique_added", technique_id=technique_data["technique_id"], name=technique_data["name"])
+                    logger.info(
+                        "technique_added",
+                        technique_id=technique_data["technique_id"],
+                        name=technique_data["name"],
+                    )
                 else:
-                    logger.info("technique_exists", technique_id=technique_data["technique_id"])
+                    logger.info(
+                        "technique_exists", technique_id=technique_data["technique_id"]
+                    )
 
             except Exception as e:
-                logger.warning("technique_add_failed", technique_id=technique_data["technique_id"], error=str(e))
+                logger.warning(
+                    "technique_add_failed",
+                    technique_id=technique_data["technique_id"],
+                    error=str(e),
+                )
                 await db.rollback()
                 continue
 
@@ -122,19 +151,32 @@ async def seed_mitre_techniques_async() -> None:
             try:
                 # Check if technique already exists
                 result = await db.execute(
-                    select(MitreTechnique).where(MitreTechnique.technique_id == technique_data["technique_id"])
+                    select(MitreTechnique).where(
+                        MitreTechnique.technique_id == technique_data["technique_id"]
+                    )
                 )
                 existing = result.scalar_one_or_none()
 
                 if not existing:
                     technique = MitreTechnique(**technique_data)
                     db.add(technique)
-                    logger.info("sub_technique_added", technique_id=technique_data["technique_id"], name=technique_data["name"])
+                    logger.info(
+                        "sub_technique_added",
+                        technique_id=technique_data["technique_id"],
+                        name=technique_data["name"],
+                    )
                 else:
-                    logger.info("sub_technique_exists", technique_id=technique_data["technique_id"])
+                    logger.info(
+                        "sub_technique_exists",
+                        technique_id=technique_data["technique_id"],
+                    )
 
             except Exception as e:
-                logger.warning("sub_technique_add_failed", technique_id=technique_data["technique_id"], error=str(e))
+                logger.warning(
+                    "sub_technique_add_failed",
+                    technique_id=technique_data["technique_id"],
+                    error=str(e),
+                )
                 await db.rollback()
                 continue
 
@@ -190,5 +232,5 @@ async def get_mitre_stats_async() -> dict:
             "techniques": techniques_count,
             "parent_techniques": parent_techniques_count,
             "sub_techniques": sub_techniques_count,
-            "severities": severities_count
+            "severities": severities_count,
         }

@@ -2,22 +2,21 @@
 Business logic service for actor management.
 """
 
-from datetime import datetime
-from typing import List, Optional, Dict, Any
 from uuid import UUID
 
-from sqlalchemy import select, func, and_, or_
+from sqlalchemy import and_, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from src.core.exceptions import ValidationError, ResourceNotFoundError
+from src.core.exceptions import ResourceNotFoundError, ValidationError
 from src.core.logging import get_logger
-from src.db.models import Actor, Campaign, Malware
+from src.db.models import Actor
 from src.schemas.actor import (
-    ActorCreate, ActorUpdate, ActorSearchRequest,
-    CampaignCreate, CampaignUpdate,
-    MalwareCreate, MalwareUpdate
+    ActorCreate,
+    ActorSearchRequest,
+    ActorUpdate,
 )
+
 
 logger = get_logger(__name__)
 
@@ -27,10 +26,7 @@ class ActorService:
 
     @staticmethod
     async def create_actor(
-        db: AsyncSession,
-        actor_data: ActorCreate,
-        tenant_id: UUID,
-        user_id: UUID
+        db: AsyncSession, actor_data: ActorCreate, tenant_id: UUID, user_id: UUID
     ) -> Actor:
         """
         Create a new actor.
@@ -50,10 +46,7 @@ class ActorService:
         # Check for duplicate names within tenant
         existing = await db.execute(
             select(Actor).where(
-                and_(
-                    Actor.tenant_id == tenant_id,
-                    Actor.name == actor_data.name
-                )
+                and_(Actor.tenant_id == tenant_id, Actor.name == actor_data.name)
             )
         )
         if existing.scalar_one_or_none():
@@ -62,10 +55,7 @@ class ActorService:
         # Create actor
         actor_dict = actor_data.model_dump()
         actor = Actor(
-            **actor_dict,
-            tenant_id=tenant_id,
-            created_by=user_id,
-            updated_by=user_id
+            **actor_dict, tenant_id=tenant_id, created_by=user_id, updated_by=user_id
         )
 
         # Calculate confidence score
@@ -74,15 +64,16 @@ class ActorService:
         db.add(actor)
         await db.commit()
 
-        logger.info("actor_created", actor_id=str(actor.id), name=actor.name, tenant_id=str(tenant_id))
+        logger.info(
+            "actor_created",
+            actor_id=str(actor.id),
+            name=actor.name,
+            tenant_id=str(tenant_id),
+        )
         return actor
 
     @staticmethod
-    async def get_actor(
-        db: AsyncSession,
-        actor_id: UUID,
-        tenant_id: UUID
-    ) -> Actor:
+    async def get_actor(db: AsyncSession, actor_id: UUID, tenant_id: UUID) -> Actor:
         """
         Get actor by ID.
 
@@ -100,15 +91,9 @@ class ActorService:
         result = await db.execute(
             select(Actor)
             .options(
-                selectinload(Actor.campaigns),
-                selectinload(Actor.malware_families)
+                selectinload(Actor.campaigns), selectinload(Actor.malware_families)
             )
-            .where(
-                and_(
-                    Actor.id == actor_id,
-                    Actor.tenant_id == tenant_id
-                )
-            )
+            .where(and_(Actor.id == actor_id, Actor.tenant_id == tenant_id))
         )
         actor = result.scalar_one_or_none()
         if not actor:
@@ -122,7 +107,7 @@ class ActorService:
         actor_id: UUID,
         actor_data: ActorUpdate,
         tenant_id: UUID,
-        user_id: UUID
+        user_id: UUID,
     ) -> Actor:
         """
         Update actor.
@@ -150,12 +135,14 @@ class ActorService:
                     and_(
                         Actor.tenant_id == tenant_id,
                         Actor.name == actor_data.name,
-                        Actor.id != actor_id
+                        Actor.id != actor_id,
                     )
                 )
             )
             if existing.scalar_one_or_none():
-                raise ValidationError(f"Actor with name '{actor_data.name}' already exists")
+                raise ValidationError(
+                    f"Actor with name '{actor_data.name}' already exists"
+                )
 
         # Update fields
         update_data = actor_data.model_dump(exclude_unset=True)
@@ -169,15 +156,16 @@ class ActorService:
 
         await db.commit()
 
-        logger.info("actor_updated", actor_id=str(actor.id), name=actor.name, tenant_id=str(tenant_id))
+        logger.info(
+            "actor_updated",
+            actor_id=str(actor.id),
+            name=actor.name,
+            tenant_id=str(tenant_id),
+        )
         return actor
 
     @staticmethod
-    async def delete_actor(
-        db: AsyncSession,
-        actor_id: UUID,
-        tenant_id: UUID
-    ) -> None:
+    async def delete_actor(db: AsyncSession, actor_id: UUID, tenant_id: UUID) -> None:
         """
         Delete actor.
 
@@ -193,7 +181,12 @@ class ActorService:
         await db.delete(actor)
         await db.commit()
 
-        logger.info("actor_deleted", actor_id=str(actor_id), name=actor.name, tenant_id=str(tenant_id))
+        logger.info(
+            "actor_deleted",
+            actor_id=str(actor_id),
+            name=actor.name,
+            tenant_id=str(tenant_id),
+        )
 
     @staticmethod
     async def search_actors(
@@ -201,8 +194,8 @@ class ActorService:
         search_request: ActorSearchRequest,
         tenant_id: UUID,
         page: int = 1,
-        per_page: int = 50
-    ) -> tuple[List[Actor], int]:
+        per_page: int = 50,
+    ) -> tuple[list[Actor], int]:
         """
         Search actors with advanced filtering.
 
@@ -225,7 +218,7 @@ class ActorService:
                 or_(
                     Actor.name.ilike(search_term),
                     Actor.description.ilike(search_term),
-                    Actor.summary.ilike(search_term)
+                    Actor.summary.ilike(search_term),
                 )
             )
 
@@ -237,17 +230,23 @@ class ActorService:
             query = query.where(Actor.threat_level.in_(search_request.threat_levels))
 
         if search_request.sophistication_levels:
-            query = query.where(Actor.sophistication_level.in_(search_request.sophistication_levels))
+            query = query.where(
+                Actor.sophistication_level.in_(search_request.sophistication_levels)
+            )
 
         if search_request.statuses:
             query = query.where(Actor.status.in_(search_request.statuses))
 
         if search_request.origin_countries:
-            query = query.where(Actor.origin_country.in_(search_request.origin_countries))
+            query = query.where(
+                Actor.origin_country.in_(search_request.origin_countries)
+            )
 
         if search_request.target_sectors:
             # Use overlap operator for array fields
-            query = query.where(Actor.target_sectors.op("&&")(search_request.target_sectors))
+            query = query.where(
+                Actor.target_sectors.op("&&")(search_request.target_sectors)
+            )
 
         if search_request.motivations:
             query = query.where(Actor.motivations.op("&&")(search_request.motivations))
@@ -294,7 +293,12 @@ class ActorService:
         result = await db.execute(query)
         actors = result.scalars().all()
 
-        logger.info("actors_searched", total=total, returned=len(actors), tenant_id=str(tenant_id))
+        logger.info(
+            "actors_searched",
+            total=total,
+            returned=len(actors),
+            tenant_id=str(tenant_id),
+        )
         return list(actors), total
 
     @staticmethod
@@ -303,8 +307,8 @@ class ActorService:
         tenant_id: UUID,
         page: int = 1,
         per_page: int = 50,
-        include_related: bool = False
-    ) -> tuple[List[Actor], int]:
+        include_related: bool = False,
+    ) -> tuple[list[Actor], int]:
         """
         List actors with pagination.
 
@@ -322,12 +326,13 @@ class ActorService:
 
         if include_related:
             query = query.options(
-                selectinload(Actor.campaigns),
-                selectinload(Actor.malware_families)
+                selectinload(Actor.campaigns), selectinload(Actor.malware_families)
             )
 
         # Get total count
-        count_query = select(func.count()).select_from(Actor).where(Actor.tenant_id == tenant_id)
+        count_query = (
+            select(func.count()).select_from(Actor).where(Actor.tenant_id == tenant_id)
+        )
         total_result = await db.execute(count_query)
         total = total_result.scalar()
 

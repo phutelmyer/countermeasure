@@ -1,0 +1,160 @@
+#!/bin/bash
+"""
+Countermeasure Collector Management Script
+"""
+
+set -e
+
+# Change to collector directory
+cd "$(dirname "$0")"
+
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m' # No Color
+
+show_help() {
+    echo -e "${BLUE}Countermeasure Collector Management${NC}"
+    echo ""
+    echo "Usage: ./collector [COMMAND] [OPTIONS]"
+    echo ""
+    echo "Commands:"
+    echo "  start           Start all collector services"
+    echo "  stop            Stop all collector services"
+    echo "  restart         Restart all collector services"
+    echo "  status          Show status of all services"
+    echo "  flower          Start only Flower monitoring UI"
+    echo "  worker          Start only Celery worker"
+    echo "  beat            Start only Celery beat scheduler"
+    echo "  logs            Show recent logs from collection history"
+    echo "  collect         Run SIGMA collection manually"
+    echo "  enrich          Run enrichment tasks manually"
+    echo "  validate        Run validation tasks manually"
+    echo "  history         View collection history"
+    echo ""
+    echo "Options:"
+    echo "  -b, --background    Run in background"
+    echo "  -h, --help         Show this help"
+    echo ""
+    echo "Examples:"
+    echo "  ./collector start                 # Start all services"
+    echo "  ./collector status                # Check service status"
+    echo "  ./collector collect --limit 100   # Collect 100 SIGMA rules"
+    echo "  ./collector history stats         # Show collection statistics"
+    echo ""
+}
+
+# Parse arguments
+BACKGROUND=false
+COMMAND=""
+
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        -b|--background)
+            BACKGROUND=true
+            shift
+            ;;
+        -h|--help)
+            show_help
+            exit 0
+            ;;
+        start|stop|restart|status|flower|worker|beat|logs|collect|enrich|validate|history)
+            COMMAND=$1
+            shift
+            break
+            ;;
+        *)
+            echo -e "${RED}Unknown option: $1${NC}"
+            show_help
+            exit 1
+            ;;
+    esac
+done
+
+# Check if uv is available
+if ! command -v uv &> /dev/null; then
+    echo -e "${RED}Error: uv is not installed or not in PATH${NC}"
+    echo "Please install uv: https://github.com/astral-sh/uv"
+    exit 1
+fi
+
+case $COMMAND in
+    start)
+        echo -e "${GREEN}Starting Countermeasure Collector services...${NC}"
+        if [ "$BACKGROUND" = true ]; then
+            uv run python start_services.py start --background
+        else
+            uv run python start_services.py start
+        fi
+        ;;
+    stop)
+        echo -e "${YELLOW}Stopping Countermeasure Collector services...${NC}"
+        uv run python start_services.py stop
+        ;;
+    restart)
+        echo -e "${YELLOW}Restarting Countermeasure Collector services...${NC}"
+        if [ "$BACKGROUND" = true ]; then
+            uv run python start_services.py restart --background
+        else
+            uv run python start_services.py restart
+        fi
+        ;;
+    status)
+        uv run python start_services.py status
+        ;;
+    flower)
+        echo -e "${BLUE}Starting Flower monitoring UI...${NC}"
+        if [ "$BACKGROUND" = true ]; then
+            uv run python start_services.py start-flower --background
+        else
+            uv run python start_services.py start-flower
+        fi
+        ;;
+    worker)
+        echo -e "${BLUE}Starting Celery worker...${NC}"
+        if [ "$BACKGROUND" = true ]; then
+            uv run python start_services.py start-worker --background
+        else
+            uv run python start_services.py start-worker
+        fi
+        ;;
+    beat)
+        echo -e "${BLUE}Starting Celery beat scheduler...${NC}"
+        if [ "$BACKGROUND" = true ]; then
+            uv run python start_services.py start-beat --background
+        else
+            uv run python start_services.py start-beat
+        fi
+        ;;
+    logs)
+        echo -e "${BLUE}Recent collection history:${NC}"
+        uv run python src/cli/history.py list --limit 10
+        ;;
+    collect)
+        echo -e "${GREEN}Starting manual SIGMA collection...${NC}"
+        uv run python -m src.collectors.detection.sigma "$@"
+        ;;
+    enrich)
+        echo -e "${GREEN}Starting enrichment tasks...${NC}"
+        uv run celery -A src.schedulers.celery_app:app call src.tasks.enrich.enrich_detections
+        ;;
+    validate)
+        echo -e "${GREEN}Starting validation tasks...${NC}"
+        uv run celery -A src.schedulers.celery_app:app call src.tasks.validate.validate_all_rules
+        ;;
+    history)
+        uv run python src/cli/history.py "$@"
+        ;;
+    "")
+        echo -e "${RED}No command specified${NC}"
+        show_help
+        exit 1
+        ;;
+    *)
+        echo -e "${RED}Unknown command: $COMMAND${NC}"
+        show_help
+        exit 1
+        ;;
+esac

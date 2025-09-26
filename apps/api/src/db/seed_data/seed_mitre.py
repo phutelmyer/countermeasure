@@ -3,11 +3,13 @@ Seed MITRE ATT&CK data into the database.
 """
 
 import logging
-from sqlalchemy.orm import Session
-from sqlalchemy.exc import IntegrityError
 
-from ..models import MitreTactic, MitreTechnique, Severity
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import Session
+
 from .mitre_data import MITRE_TACTICS, MITRE_TECHNIQUES, SEVERITY_LEVELS
+from ..models import MitreTactic, MitreTechnique, Severity
+
 
 logger = logging.getLogger(__name__)
 
@@ -19,9 +21,11 @@ def seed_severities(db: Session) -> None:
     for severity_data in SEVERITY_LEVELS:
         try:
             # Check if severity already exists
-            existing = db.query(Severity).filter(
-                Severity.name == severity_data["name"]
-            ).first()
+            existing = (
+                db.query(Severity)
+                .filter(Severity.name == severity_data["name"])
+                .first()
+            )
 
             if not existing:
                 severity = Severity(**severity_data)
@@ -50,14 +54,18 @@ def seed_mitre_tactics(db: Session) -> None:
     for tactic_data in MITRE_TACTICS:
         try:
             # Check if tactic already exists
-            existing = db.query(MitreTactic).filter(
-                MitreTactic.tactic_id == tactic_data["tactic_id"]
-            ).first()
+            existing = (
+                db.query(MitreTactic)
+                .filter(MitreTactic.tactic_id == tactic_data["tactic_id"])
+                .first()
+            )
 
             if not existing:
                 tactic = MitreTactic(**tactic_data)
                 db.add(tactic)
-                logger.info(f"Added tactic: {tactic_data['tactic_id']} - {tactic_data['name']}")
+                logger.info(
+                    f"Added tactic: {tactic_data['tactic_id']} - {tactic_data['name']}"
+                )
             else:
                 logger.info(f"Tactic already exists: {tactic_data['tactic_id']}")
 
@@ -79,26 +87,38 @@ def seed_mitre_techniques(db: Session) -> None:
     logger.info("Seeding MITRE ATT&CK techniques...")
 
     # First, seed parent techniques (those without parent_technique_id)
-    parent_techniques = [t for t in MITRE_TECHNIQUES if t["parent_technique_id"] is None]
-    sub_techniques = [t for t in MITRE_TECHNIQUES if t["parent_technique_id"] is not None]
+    parent_techniques = [
+        t for t in MITRE_TECHNIQUES if t["parent_technique_id"] is None
+    ]
+    sub_techniques = [
+        t for t in MITRE_TECHNIQUES if t["parent_technique_id"] is not None
+    ]
 
     # Seed parent techniques first
     for technique_data in parent_techniques:
         try:
             # Check if technique already exists
-            existing = db.query(MitreTechnique).filter(
-                MitreTechnique.technique_id == technique_data["technique_id"]
-            ).first()
+            existing = (
+                db.query(MitreTechnique)
+                .filter(MitreTechnique.technique_id == technique_data["technique_id"])
+                .first()
+            )
 
             if not existing:
                 technique = MitreTechnique(**technique_data)
                 db.add(technique)
-                logger.info(f"Added technique: {technique_data['technique_id']} - {technique_data['name']}")
+                logger.info(
+                    f"Added technique: {technique_data['technique_id']} - {technique_data['name']}"
+                )
             else:
-                logger.info(f"Technique already exists: {technique_data['technique_id']}")
+                logger.info(
+                    f"Technique already exists: {technique_data['technique_id']}"
+                )
 
         except IntegrityError as e:
-            logger.warning(f"Failed to add technique {technique_data['technique_id']}: {e}")
+            logger.warning(
+                f"Failed to add technique {technique_data['technique_id']}: {e}"
+            )
             db.rollback()
             continue
 
@@ -114,19 +134,27 @@ def seed_mitre_techniques(db: Session) -> None:
     for technique_data in sub_techniques:
         try:
             # Check if technique already exists
-            existing = db.query(MitreTechnique).filter(
-                MitreTechnique.technique_id == technique_data["technique_id"]
-            ).first()
+            existing = (
+                db.query(MitreTechnique)
+                .filter(MitreTechnique.technique_id == technique_data["technique_id"])
+                .first()
+            )
 
             if not existing:
                 technique = MitreTechnique(**technique_data)
                 db.add(technique)
-                logger.info(f"Added sub-technique: {technique_data['technique_id']} - {technique_data['name']}")
+                logger.info(
+                    f"Added sub-technique: {technique_data['technique_id']} - {technique_data['name']}"
+                )
             else:
-                logger.info(f"Sub-technique already exists: {technique_data['technique_id']}")
+                logger.info(
+                    f"Sub-technique already exists: {technique_data['technique_id']}"
+                )
 
         except IntegrityError as e:
-            logger.warning(f"Failed to add sub-technique {technique_data['technique_id']}: {e}")
+            logger.warning(
+                f"Failed to add sub-technique {technique_data['technique_id']}: {e}"
+            )
             db.rollback()
             continue
 
@@ -160,12 +188,16 @@ def get_mitre_stats(db: Session) -> dict:
     """Get statistics about MITRE data in the database."""
     tactics_count = db.query(MitreTactic).count()
     techniques_count = db.query(MitreTechnique).count()
-    parent_techniques_count = db.query(MitreTechnique).filter(
-        MitreTechnique.parent_technique_id.is_(None)
-    ).count()
-    sub_techniques_count = db.query(MitreTechnique).filter(
-        MitreTechnique.parent_technique_id.isnot(None)
-    ).count()
+    parent_techniques_count = (
+        db.query(MitreTechnique)
+        .filter(MitreTechnique.parent_technique_id.is_(None))
+        .count()
+    )
+    sub_techniques_count = (
+        db.query(MitreTechnique)
+        .filter(MitreTechnique.parent_technique_id.isnot(None))
+        .count()
+    )
     severities_count = db.query(Severity).count()
 
     return {
@@ -173,7 +205,7 @@ def get_mitre_stats(db: Session) -> dict:
         "techniques": techniques_count,
         "parent_techniques": parent_techniques_count,
         "sub_techniques": sub_techniques_count,
-        "severities": severities_count
+        "severities": severities_count,
     }
 
 

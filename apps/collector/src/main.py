@@ -8,12 +8,14 @@ from pathlib import Path
 
 import click
 
+
 # Add the src directory to the Python path
 sys.path.insert(0, str(Path(__file__).parent))
 
 from src.collectors.detection.sigma import SigmaCollector
-from src.core.logging import get_logger
 from src.config.settings import settings
+from src.core.logging import get_logger
+
 
 logger = get_logger(__name__)
 
@@ -21,7 +23,6 @@ logger = get_logger(__name__)
 @click.group()
 def cli():
     """Countermeasure Collector Service."""
-    pass
 
 
 @cli.command()
@@ -29,54 +30,43 @@ def cli():
     "--api-url",
     default=settings.API_URL,
     help="Countermeasure API base URL",
-    show_default=True
+    show_default=True,
 )
 @click.option(
-    "--email",
-    default=settings.API_EMAIL,
-    help="Admin email for authentication"
+    "--email", default=settings.API_EMAIL, help="Admin email for authentication"
 )
 @click.option(
     "--password",
     default=settings.API_PASSWORD,
-    help="Admin password for authentication"
+    help="Admin password for authentication",
 )
 @click.option(
     "--repo-url",
     default=settings.SIGMA_REPO_URL,
     help="SIGMA repository URL",
-    show_default=True
+    show_default=True,
 )
 @click.option(
     "--categories",
     multiple=True,
-    help="Filter by rule categories (can be specified multiple times)"
+    help="Filter by rule categories (can be specified multiple times)",
 )
 @click.option(
     "--limit",
     type=int,
     default=settings.SIGMA_DEFAULT_LIMIT,
     help="Maximum number of rules to import",
-    show_default=True
+    show_default=True,
 )
 @click.option(
     "--batch-size",
     type=int,
     default=settings.DEFAULT_BATCH_SIZE,
     help="Batch size for API submissions",
-    show_default=True
+    show_default=True,
 )
-@click.option(
-    "--dry-run",
-    is_flag=True,
-    help="Preview rules without importing to API"
-)
-@click.option(
-    "--verbose",
-    "-v",
-    is_flag=True,
-    help="Enable verbose logging"
-)
+@click.option("--dry-run", is_flag=True, help="Preview rules without importing to API")
+@click.option("--verbose", "-v", is_flag=True, help="Enable verbose logging")
 def collect_sigma(
     api_url: str,
     email: str,
@@ -86,7 +76,7 @@ def collect_sigma(
     limit: int,
     batch_size: int,
     dry_run: bool,
-    verbose: bool
+    verbose: bool,
 ):
     """
     Collect SIGMA rules from SigmaHQ repository and import them into Countermeasure.
@@ -112,10 +102,13 @@ def collect_sigma(
 
     # Configure logging
     import logging
+
     if verbose:
         logging.basicConfig(level=logging.DEBUG, format=settings.LOG_FORMAT)
     else:
-        logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+        logging.basicConfig(
+            level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
+        )
 
     # Build configuration
     config = {
@@ -126,7 +119,7 @@ def collect_sigma(
         "categories": list(categories),
         "limit": limit,
         "batch_size": batch_size,
-        "dry_run": dry_run
+        "dry_run": dry_run,
     }
 
     async def run_collector():
@@ -153,18 +146,22 @@ def collect_sigma(
 
             if result.successful > 0:
                 if dry_run:
-                    click.echo(f"\n✅ Dry run completed successfully! {result.successful} rules would be imported.")
+                    click.echo(
+                        f"\n✅ Dry run completed successfully! {result.successful} rules would be imported."
+                    )
                 else:
-                    click.echo(f"\n✅ Successfully imported {result.successful} SIGMA rules!")
+                    click.echo(
+                        f"\n✅ Successfully imported {result.successful} SIGMA rules!"
+                    )
                 return 0
-            else:
-                click.echo("\n❌ No rules were imported. Check logs for errors.")
-                return 1
+            click.echo("\n❌ No rules were imported. Check logs for errors.")
+            return 1
 
         except Exception as e:
-            click.echo(f"\n💥 Collection failed: {str(e)}", err=True)
+            click.echo(f"\n💥 Collection failed: {e!s}", err=True)
             if verbose:
                 import traceback
+
                 traceback.print_exc()
             return 1
 
@@ -178,17 +175,15 @@ def collect_sigma(
     "--api-url",
     default=settings.API_URL,
     help="Countermeasure API base URL",
-    show_default=True
+    show_default=True,
 )
 @click.option(
-    "--email",
-    default=settings.API_EMAIL,
-    help="Admin email for authentication"
+    "--email", default=settings.API_EMAIL, help="Admin email for authentication"
 )
 @click.option(
     "--password",
     default=settings.API_PASSWORD,
-    help="Admin password for authentication"
+    help="Admin password for authentication",
 )
 def test_connection(api_url: str, email: str, password: str):
     """Test connection to Countermeasure API."""
@@ -211,12 +206,11 @@ def test_connection(api_url: str, email: str, password: str):
                 click.echo(f"📊 Found {len(severities)} severity levels")
 
                 return 0
-            else:
-                click.echo("❌ Authentication failed!")
-                return 1
+            click.echo("❌ Authentication failed!")
+            return 1
 
         except Exception as e:
-            click.echo(f"💥 Connection failed: {str(e)}", err=True)
+            click.echo(f"💥 Connection failed: {e!s}", err=True)
             return 1
         finally:
             await client.close()
@@ -230,12 +224,10 @@ def worker():
     """Start Celery worker."""
     click.echo("🔧 Starting Celery worker...")
     import subprocess
-    subprocess.run([
-        "celery",
-        "-A", "src.schedulers.celery_app",
-        "worker",
-        "--loglevel=info"
-    ])
+
+    subprocess.run(
+        ["celery", "-A", "src.schedulers.celery_app", "worker", "--loglevel=info"], check=False
+    )
 
 
 @cli.command()
@@ -243,12 +235,10 @@ def beat():
     """Start Celery beat scheduler."""
     click.echo("⏰ Starting Celery beat scheduler...")
     import subprocess
-    subprocess.run([
-        "celery",
-        "-A", "src.schedulers.celery_app",
-        "beat",
-        "--loglevel=info"
-    ])
+
+    subprocess.run(
+        ["celery", "-A", "src.schedulers.celery_app", "beat", "--loglevel=info"], check=False
+    )
 
 
 @cli.command()
@@ -256,11 +246,8 @@ def flower():
     """Start Flower monitoring."""
     click.echo("🌸 Starting Flower monitoring...")
     import subprocess
-    subprocess.run([
-        "celery",
-        "-A", "src.schedulers.celery_app",
-        "flower"
-    ])
+
+    subprocess.run(["celery", "-A", "src.schedulers.celery_app", "flower"], check=False)
 
 
 if __name__ == "__main__":

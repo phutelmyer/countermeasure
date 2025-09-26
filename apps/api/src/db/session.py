@@ -2,14 +2,15 @@
 Database session configuration and connection management.
 """
 
+from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
-from typing import AsyncGenerator
 
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.pool import NullPool
 
 from src.core.config import settings
 from src.core.logging import get_logger
+
 
 logger = get_logger(__name__)
 
@@ -72,7 +73,6 @@ async def get_db_context() -> AsyncGenerator[AsyncSession, None]:
 async def run_migrations():
     """Run Alembic migrations to upgrade database schema."""
     import subprocess
-    import os
     from pathlib import Path
 
     # Get the API directory (where alembic.ini is located)
@@ -85,11 +85,13 @@ async def run_migrations():
             cwd=api_dir,
             capture_output=True,
             text=True,
-            check=True
+            check=True,
         )
         logger.info("database_migrations_completed", output=result.stdout)
     except subprocess.CalledProcessError as e:
-        logger.error("database_migrations_failed", error=e.stderr, returncode=e.returncode)
+        logger.error(
+            "database_migrations_failed", error=e.stderr, returncode=e.returncode
+        )
         raise RuntimeError(f"Database migration failed: {e.stderr}")
 
 

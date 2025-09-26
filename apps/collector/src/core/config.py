@@ -2,59 +2,102 @@
 Enterprise-grade configuration management for collectors.
 """
 
-import json
-import os
-from pathlib import Path
-from typing import Any, Dict, Optional, Union
-from dataclasses import dataclass, field
-from pydantic import BaseModel, ValidationError, validator
 import logging
+from pathlib import Path
+from typing import Any
+
+from pydantic import BaseModel, ValidationError, field_validator, validator
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
 
 logger = logging.getLogger(__name__)
 
 
 class ConfigValidationError(Exception):
     """Raised when configuration validation fails."""
-    pass
 
 
-class BaseConfig(BaseModel):
+
+class BaseConfig(BaseSettings):
     """Base configuration schema with common validation."""
+
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        env_ignore_empty=True,
+        case_sensitive=False,
+        extra="forbid",
+    )
 
     # API Configuration
     api_url: str = "http://localhost:8000"
-    email: str = "admin@countermeasure.dev"
-    password: str = ""
+    api_timeout_seconds: int = 30
+    api_retries: int = 3
 
-    # Timeouts and rate limiting
-    request_timeout: int = 30
-    max_retries: int = 3
-    retry_delay: float = 1.0
+    # Authentication
+    default_email: str = "admin@countermeasure.dev"
+    default_password: str = ""
 
-    # Logging
+    # Collector Configuration
+    collector_name: str = "countermeasure-collector"
+    collector_version: str = "1.0.0"
+    batch_size: int = 50
+    max_workers: int = 4
+    collection_timeout_minutes: int = 30
+
+    # Environment
+    environment: str = "development"
+    debug: bool = False
     log_level: str = "INFO"
+    log_format: str = "structured"
 
-    @validator('api_url')
-    def validate_api_url(cls, v):
-        if not v.startswith(('http://', 'https://')):
-            raise ValueError('api_url must start with http:// or https://')
+    # Redis/Celery Configuration
+    redis_host: str = "localhost"
+    redis_port: int = 6379
+    redis_db: int = 0
+    redis_password: str | None = None
+    celery_broker_url: str | None = None
+    celery_result_backend: str | None = None
+
+    @field_validator("api_url")
+    @classmethod
+    def validate_api_url(cls, v: str) -> str:
+        if not v.startswith(("http://", "https://")):
+            raise ValueError("api_url must start with http:// or https://")
         return v
 
-    @validator('log_level')
-    def validate_log_level(cls, v):
-        valid_levels = ['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL']
+    @field_validator("log_level")
+    @classmethod
+    def validate_log_level(cls, v: str) -> str:
+        valid_levels = ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
         if v.upper() not in valid_levels:
-            raise ValueError(f'log_level must be one of {valid_levels}')
+            raise ValueError(f"log_level must be one of {valid_levels}")
         return v.upper()
 
-    @validator('password')
-    def validate_password(cls, v):
-        if not v:
-            env_password = os.getenv('COUNTERMEASURE_PASSWORD')
-            if env_password:
-                return env_password
-            raise ValueError('password must be provided via config or COUNTERMEASURE_PASSWORD env var')
-        return v
+    @field_validator("environment")
+    @classmethod
+    def validate_environment(cls, v: str) -> str:
+        valid_envs = ["development", "staging", "production"]
+        if v.lower() not in valid_envs:
+            raise ValueError(f"environment must be one of {valid_envs}")
+        return v.lower()
+
+    def get_redis_url(self, db: int | None = None) -> str:
+        """Get Redis URL for the specified database."""
+        db_num = db if db is not None else self.redis_db
+        if self.redis_password:
+            return f"redis://:{self.redis_password}@{self.redis_host}:{self.redis_port}/{db_num}"
+        return f"redis://{self.redis_host}:{self.redis_port}/{db_num}"
+
+    @property
+    def redis_broker_url(self) -> str:
+        """Get Redis broker URL for Celery."""
+        return self.get_redis_url(0)
+
+    @property
+    def redis_result_backend(self) -> str:
+        """Get Redis result backend URL for Celery."""
+        return self.get_redis_url(1)
 
 
 class MitreConfig(BaseConfig):
@@ -68,31 +111,85 @@ class MitreConfig(BaseConfig):
     enable_groups: bool = True
     batch_size: int = 50
 
-    @validator('mitre_stix_url')
+    @validator("mitre_stix_url")
     def validate_mitre_url(cls, v):
-        if not v.startswith(('http://', 'https://')):
-            raise ValueError('mitre_stix_url must be a valid URL')
+        if not v.startswith(("http://", "https://")):
+            raise ValueError("mitre_stix_url must be a valid URL")
         return v
 
 
 class SigmaConfig(BaseConfig):
     """Configuration schema for SIGMA collector."""
 
-    repo_url: str = "https://github.com/SigmaHQ/sigma.git"
-    branch: str = "master"
-    limit: Optional[int] = None
-    batch_size: int = 50
+    # SIGMA Repository Configuration
+    sigma_repo_url: str = "https://github.com/SigmaHQ/sigma.git"
+    sigma_repo_branch: str = "master"
+    sigma_rules_directory: str = "rules"
+    sigma_categories: list[str] = [
+        "process_creation",
+        "network_connection",
+        "file_event",
+        "registry_event",
+        "image_load",
+        "dns",
+    ]
 
-    # SIGMA-specific settings
-    include_test_rules: bool = False
-    min_confidence: str = "medium"
+    # Collection Configuration
+    collection_limit: int | None = None
+    dry_run: bool = False
 
-    @validator('min_confidence')
-    def validate_confidence(cls, v):
-        valid_levels = ['low', 'medium', 'high']
-        if v.lower() not in valid_levels:
-            raise ValueError(f'min_confidence must be one of {valid_levels}')
-        return v.lower()
+    # Git Configuration
+    git_clone_depth: int = 1
+    git_timeout_seconds: int = 300
+    temp_dir_prefix: str = "countermeasure_sigma_"
+
+    # Data Processing
+    validate_sigma_rules: bool = True
+    skip_invalid_rules: bool = True
+    extract_metadata: bool = True
+    enrich_with_mitre: bool = True
+
+    @field_validator("sigma_categories")
+    @classmethod
+    def validate_categories(cls, v: list[str]) -> list[str]:
+        valid_categories = [
+            "process_creation",
+            "network_connection",
+            "file_event",
+            "registry_event",
+            "image_load",
+            "dns",
+            "command_line",
+            "authentication",
+            "privilege_escalation",
+            "lateral_movement",
+        ]
+        for category in v:
+            if category not in valid_categories:
+                raise ValueError(f"Invalid category: {category}. Valid: {valid_categories}")
+        return v
+
+
+class Settings(BaseConfig):
+    """Main collector settings combining all configs."""
+
+    # API Configuration
+    api_url: str = "http://localhost:8000"
+    default_email: str = "admin@countermeasure.dev"
+    default_password: str = "CountermeasureAdmin123!"
+
+    # Basic Configuration
+    environment: str = "development"
+    log_level: str = "INFO"
+    debug: bool = False
+
+    # Redis Configuration
+    redis_url: str = "redis://localhost:6379/0"
+
+    # Celery Configuration
+    celery_broker_url: str = "redis://localhost:6379/0"
+    celery_result_backend: str = "redis://localhost:6379/0"
+    celery_timezone: str = "UTC"
 
 
 class ConfigManager:
@@ -106,13 +203,13 @@ class ConfigManager:
             config_schema: Pydantic model class for validation
         """
         self.config_schema = config_schema
-        self._config: Optional[BaseConfig] = None
+        self._config: BaseConfig | None = None
 
     def load_config(
         self,
-        config_file: Optional[Union[str, Path]] = None,
+        config_file: str | Path | None = None,
         env_prefix: str = "COUNTERMEASURE_",
-        **override_kwargs
+        **override_kwargs,
     ) -> BaseConfig:
         """
         Load and validate configuration from multiple sources with priority order:
@@ -149,7 +246,7 @@ class ConfigManager:
             # 4. Validate and create config object
             self._config = self.config_schema(**config_data)
 
-            logger.info(f"Configuration loaded successfully")
+            logger.info("Configuration loaded successfully")
             logger.debug(f"Using API URL: {self._config.api_url}")
 
             return self._config
@@ -163,7 +260,7 @@ class ConfigManager:
             logger.error(error_msg)
             raise ConfigValidationError(error_msg) from e
 
-    def _load_from_file(self, config_file: Union[str, Path]) -> Dict[str, Any]:
+    def _load_from_file(self, config_file: str | Path) -> dict[str, Any]:
         """
         Load configuration from JSON file with proper error handling.
 
@@ -182,28 +279,38 @@ class ConfigManager:
             raise ConfigValidationError(f"Configuration file not found: {config_path}")
 
         if not config_path.is_file():
-            raise ConfigValidationError(f"Configuration path is not a file: {config_path}")
+            raise ConfigValidationError(
+                f"Configuration path is not a file: {config_path}"
+            )
 
         # Check file permissions
         if not os.access(config_path, os.R_OK):
-            raise ConfigValidationError(f"Cannot read configuration file: {config_path}")
+            raise ConfigValidationError(
+                f"Cannot read configuration file: {config_path}"
+            )
 
         try:
-            with open(config_path, 'r', encoding='utf-8') as f:
+            with open(config_path, encoding="utf-8") as f:
                 config_data = json.load(f)
 
             if not isinstance(config_data, dict):
-                raise ConfigValidationError("Configuration file must contain a JSON object")
+                raise ConfigValidationError(
+                    "Configuration file must contain a JSON object"
+                )
 
             logger.info(f"Loaded configuration from file: {config_path}")
             return config_data
 
         except json.JSONDecodeError as e:
-            raise ConfigValidationError(f"Invalid JSON in configuration file {config_path}: {e}")
+            raise ConfigValidationError(
+                f"Invalid JSON in configuration file {config_path}: {e}"
+            )
         except Exception as e:
-            raise ConfigValidationError(f"Error reading configuration file {config_path}: {e}")
+            raise ConfigValidationError(
+                f"Error reading configuration file {config_path}: {e}"
+            )
 
-    def _load_from_env(self, prefix: str) -> Dict[str, Any]:
+    def _load_from_env(self, prefix: str) -> dict[str, Any]:
         """
         Load configuration from environment variables.
 
@@ -245,7 +352,9 @@ class ConfigManager:
                 config_data[config_key] = self._convert_env_value(value, config_key)
 
         if config_data:
-            logger.info(f"Loaded {len(config_data)} configuration values from environment")
+            logger.info(
+                f"Loaded {len(config_data)} configuration values from environment"
+            )
 
         return config_data
 
@@ -253,11 +362,16 @@ class ConfigManager:
         """Convert environment variable string to appropriate type."""
 
         # Boolean conversions
-        if key in ['enable_tactics', 'enable_techniques', 'enable_groups', 'include_test_rules']:
-            return value.lower() in ('true', '1', 'yes', 'on')
+        if key in [
+            "enable_tactics",
+            "enable_techniques",
+            "enable_groups",
+            "include_test_rules",
+        ]:
+            return value.lower() in ("true", "1", "yes", "on")
 
         # Integer conversions
-        if key in ['request_timeout', 'max_retries', 'batch_size', 'limit']:
+        if key in ["request_timeout", "max_retries", "batch_size", "limit"]:
             try:
                 return int(value)
             except ValueError:
@@ -265,7 +379,7 @@ class ConfigManager:
                 return value
 
         # Float conversions
-        if key in ['retry_delay']:
+        if key in ["retry_delay"]:
             try:
                 return float(value)
             except ValueError:
@@ -276,42 +390,63 @@ class ConfigManager:
         return value
 
     @property
-    def config(self) -> Optional[BaseConfig]:
+    def config(self) -> BaseConfig | None:
         """Get the loaded configuration."""
         return self._config
 
-    def get_config_dict(self) -> Dict[str, Any]:
+    def get_config_dict(self) -> dict[str, Any]:
         """Get configuration as dictionary."""
         if self._config is None:
             raise ConfigValidationError("No configuration loaded")
         return self._config.dict()
 
 
-def load_mitre_config(config_file: Optional[str] = None, **kwargs) -> MitreConfig:
+# Global configuration instances
+_sigma_config: SigmaConfig | None = None
+_mitre_config: MitreConfig | None = None
+
+
+def get_sigma_config() -> SigmaConfig:
+    """Get the global SIGMA configuration instance."""
+    global _sigma_config
+    if _sigma_config is None:
+        _sigma_config = SigmaConfig()
+    return _sigma_config
+
+
+def get_mitre_config() -> MitreConfig:
+    """Get the global MITRE configuration instance."""
+    global _mitre_config
+    if _mitre_config is None:
+        _mitre_config = MitreConfig()
+    return _mitre_config
+
+
+def load_sigma_config(**kwargs) -> SigmaConfig:
     """
-    Convenience function to load MITRE collector configuration.
+    Load and cache SIGMA collector configuration.
 
     Args:
-        config_file: Optional path to configuration file
-        **kwargs: Direct configuration overrides
-
-    Returns:
-        Validated MITRE configuration
-    """
-    manager = ConfigManager(MitreConfig)
-    return manager.load_config(config_file, **kwargs)
-
-
-def load_sigma_config(config_file: Optional[str] = None, **kwargs) -> SigmaConfig:
-    """
-    Convenience function to load SIGMA collector configuration.
-
-    Args:
-        config_file: Optional path to configuration file
         **kwargs: Direct configuration overrides
 
     Returns:
         Validated SIGMA configuration
     """
-    manager = ConfigManager(SigmaConfig)
-    return manager.load_config(config_file, **kwargs)
+    global _sigma_config
+    _sigma_config = SigmaConfig(**kwargs)
+    return _sigma_config
+
+
+def load_mitre_config(**kwargs) -> MitreConfig:
+    """
+    Load and cache MITRE collector configuration.
+
+    Args:
+        **kwargs: Direct configuration overrides
+
+    Returns:
+        Validated MITRE configuration
+    """
+    global _mitre_config
+    _mitre_config = MitreConfig(**kwargs)
+    return _mitre_config

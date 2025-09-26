@@ -3,21 +3,20 @@ Seed threat actor sample data into the database.
 """
 
 import asyncio
-from typing import Dict, Any
 from uuid import UUID
 
 from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.core.logging import get_logger
-from src.db.models.threat_actor import ThreatActor, Campaign, Malware
 from src.db.models import Tenant
-from src.db.session import get_db_context
+from src.db.models.threat_actor import Campaign, Malware, ThreatActor
 from src.db.seed_data.threat_actors import (
-    threat_actor_samples,
     get_sample_campaigns,
-    get_sample_malware_families
+    get_sample_malware_families,
+    threat_actor_samples,
 )
+from src.db.session import get_db_context
+
 
 logger = get_logger(__name__)
 
@@ -34,7 +33,7 @@ async def seed_threat_actors(tenant_id: UUID, user_id: UUID) -> None:
         logger.info("seeding_threat_actors_started", tenant_id=str(tenant_id))
 
         # Track created actors for linking campaigns and malware
-        created_actors: Dict[str, ThreatActor] = {}
+        created_actors: dict[str, ThreatActor] = {}
 
         # Create threat actors
         for actor_data in threat_actor_samples:
@@ -42,21 +41,20 @@ async def seed_threat_actors(tenant_id: UUID, user_id: UUID) -> None:
             existing = await db.execute(
                 select(ThreatActor).where(
                     ThreatActor.tenant_id == tenant_id,
-                    ThreatActor.name == actor_data["name"]
+                    ThreatActor.name == actor_data["name"],
                 )
             )
             if existing.scalar_one_or_none():
                 logger.info(
                     "threat_actor_exists",
                     name=actor_data["name"],
-                    tenant_id=str(tenant_id)
+                    tenant_id=str(tenant_id),
                 )
                 continue
 
             # Create threat actor
             threat_actor = ThreatActor(
-                **{k: v for k, v in actor_data.items()},
-                tenant_id=tenant_id
+                **{k: v for k, v in actor_data.items()}, tenant_id=tenant_id
             )
 
             # Calculate confidence and quality scores
@@ -73,33 +71,35 @@ async def seed_threat_actors(tenant_id: UUID, user_id: UUID) -> None:
                 name=threat_actor.name,
                 actor_type=threat_actor.actor_type,
                 confidence_score=threat_actor.confidence_score,
-                tenant_id=str(tenant_id)
+                tenant_id=str(tenant_id),
             )
 
         # Create campaigns
         for campaign_data in get_sample_campaigns():
             threat_actor_name = campaign_data.pop("threat_actor_name", None)
-            threat_actor = created_actors.get(threat_actor_name) if threat_actor_name else None
+            threat_actor = (
+                created_actors.get(threat_actor_name) if threat_actor_name else None
+            )
 
             # Check if campaign already exists
             existing = await db.execute(
                 select(Campaign).where(
                     Campaign.tenant_id == tenant_id,
-                    Campaign.name == campaign_data["name"]
+                    Campaign.name == campaign_data["name"],
                 )
             )
             if existing.scalar_one_or_none():
                 logger.info(
                     "campaign_exists",
                     name=campaign_data["name"],
-                    tenant_id=str(tenant_id)
+                    tenant_id=str(tenant_id),
                 )
                 continue
 
             campaign = Campaign(
                 **campaign_data,
                 tenant_id=tenant_id,
-                threat_actor_id=threat_actor.id if threat_actor else None
+                threat_actor_id=threat_actor.id if threat_actor else None,
             )
 
             # Calculate confidence score based on attribution and completeness
@@ -112,37 +112,40 @@ async def seed_threat_actors(tenant_id: UUID, user_id: UUID) -> None:
                 name=campaign.name,
                 threat_actor=threat_actor_name,
                 confidence_score=campaign.confidence_score,
-                tenant_id=str(tenant_id)
+                tenant_id=str(tenant_id),
             )
 
         # Create malware families
         for malware_data in get_sample_malware_families():
             threat_actor_name = malware_data.pop("threat_actor_name", None)
-            threat_actor = created_actors.get(threat_actor_name) if threat_actor_name else None
+            threat_actor = (
+                created_actors.get(threat_actor_name) if threat_actor_name else None
+            )
 
             # Check if malware family already exists
             existing = await db.execute(
                 select(Malware).where(
-                    Malware.tenant_id == tenant_id,
-                    Malware.name == malware_data["name"]
+                    Malware.tenant_id == tenant_id, Malware.name == malware_data["name"]
                 )
             )
             if existing.scalar_one_or_none():
                 logger.info(
                     "malware_family_exists",
                     name=malware_data["name"],
-                    tenant_id=str(tenant_id)
+                    tenant_id=str(tenant_id),
                 )
                 continue
 
             malware_family = Malware(
                 **malware_data,
                 tenant_id=tenant_id,
-                threat_actor_id=threat_actor.id if threat_actor else None
+                threat_actor_id=threat_actor.id if threat_actor else None,
             )
 
             # Calculate confidence score
-            malware_family.confidence_score = _calculate_malware_confidence(malware_family)
+            malware_family.confidence_score = _calculate_malware_confidence(
+                malware_family
+            )
 
             db.add(malware_family)
 
@@ -152,7 +155,7 @@ async def seed_threat_actors(tenant_id: UUID, user_id: UUID) -> None:
                 family_type=malware_family.family_type,
                 threat_actor=threat_actor_name,
                 confidence_score=malware_family.confidence_score,
-                tenant_id=str(tenant_id)
+                tenant_id=str(tenant_id),
             )
 
         # Commit all changes
@@ -163,7 +166,7 @@ async def seed_threat_actors(tenant_id: UUID, user_id: UUID) -> None:
             tenant_id=str(tenant_id),
             actors_count=len(created_actors),
             campaigns_count=len(get_sample_campaigns()),
-            malware_count=len(get_sample_malware_families())
+            malware_count=len(get_sample_malware_families()),
         )
 
 
@@ -186,11 +189,12 @@ async def seed_default_tenant_threat_actors() -> None:
 
         # Find an admin user in the tenant
         from src.db.models import User
+
         user_result = await db.execute(
             select(User).where(
                 User.tenant_id == tenant.id,
                 User.role == "admin",
-                User.is_active == True
+                User.is_active == True,
             )
         )
         admin_user = user_result.scalar_one_or_none()
@@ -208,22 +212,33 @@ async def _calculate_quality_score(threat_actor: ThreatActor) -> float:
     score_factors = []
 
     # Essential fields (40% weight)
-    essential_fields = [threat_actor.name, threat_actor.actor_type, threat_actor.description]
-    essential_completeness = sum(1 for field in essential_fields if field) / len(essential_fields)
+    essential_fields = [
+        threat_actor.name,
+        threat_actor.actor_type,
+        threat_actor.description,
+    ]
+    essential_completeness = sum(1 for field in essential_fields if field) / len(
+        essential_fields
+    )
     score_factors.append(essential_completeness * 0.4)
 
     # Attribution data (30% weight)
     attribution_fields = [
-        threat_actor.primary_attribution, threat_actor.origin_country,
-        threat_actor.attribution_rationale
+        threat_actor.primary_attribution,
+        threat_actor.origin_country,
+        threat_actor.attribution_rationale,
     ]
-    attribution_completeness = sum(1 for field in attribution_fields if field) / len(attribution_fields)
+    attribution_completeness = sum(1 for field in attribution_fields if field) / len(
+        attribution_fields
+    )
     score_factors.append(attribution_completeness * 0.3)
 
     # Intelligence enrichment (20% weight)
     intel_fields = [
-        threat_actor.references, threat_actor.mitre_attack_id,
-        threat_actor.first_observed, threat_actor.last_observed
+        threat_actor.references,
+        threat_actor.mitre_attack_id,
+        threat_actor.first_observed,
+        threat_actor.last_observed,
     ]
     intel_completeness = sum(1 for field in intel_fields if field) / len(intel_fields)
     score_factors.append(intel_completeness * 0.2)
@@ -244,18 +259,29 @@ def _calculate_campaign_confidence(campaign: Campaign) -> float:
 
     # Data completeness (35% weight)
     completeness_fields = [
-        campaign.description, campaign.start_date, campaign.end_date,
-        campaign.objectives, campaign.target_sectors
+        campaign.description,
+        campaign.start_date,
+        campaign.end_date,
+        campaign.objectives,
+        campaign.target_sectors,
     ]
-    completeness = sum(1 for field in completeness_fields if field) / len(completeness_fields)
+    completeness = sum(1 for field in completeness_fields if field) / len(
+        completeness_fields
+    )
     factors.append(completeness * 0.35)
 
     # References quality (15% weight)
-    ref_score = min(1.0, len(campaign.references or []) / 2.0) if campaign.references else 0.0
+    ref_score = (
+        min(1.0, len(campaign.references or []) / 2.0) if campaign.references else 0.0
+    )
     factors.append(ref_score * 0.15)
 
     # TTPs documentation (10% weight)
-    ttps_score = min(1.0, len(campaign.tactics_techniques or []) / 5.0) if campaign.tactics_techniques else 0.0
+    ttps_score = (
+        min(1.0, len(campaign.tactics_techniques or []) / 5.0)
+        if campaign.tactics_techniques
+        else 0.0
+    )
     factors.append(ttps_score * 0.1)
 
     return min(1.0, sum(factors))
@@ -275,11 +301,15 @@ def _calculate_malware_confidence(malware: Malware) -> float:
 
     # Timeline data (20% weight)
     timeline_fields = [malware.first_seen, malware.last_seen]
-    timeline_completeness = sum(1 for field in timeline_fields if field) / len(timeline_fields)
+    timeline_completeness = sum(1 for field in timeline_fields if field) / len(
+        timeline_fields
+    )
     factors.append(timeline_completeness * 0.2)
 
     # References (10% weight)
-    ref_score = min(1.0, len(malware.references or []) / 2.0) if malware.references else 0.0
+    ref_score = (
+        min(1.0, len(malware.references or []) / 2.0) if malware.references else 0.0
+    )
     factors.append(ref_score * 0.1)
 
     return min(1.0, sum(factors))

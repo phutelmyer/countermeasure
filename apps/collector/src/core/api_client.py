@@ -3,12 +3,13 @@ API client for Countermeasure authentication and data submission.
 """
 
 import asyncio
-from typing import Dict, List, Optional, Any
+from typing import Any
 from uuid import UUID
-from urllib.parse import quote
 
 import httpx
+
 from src.core.logging import get_logger
+
 
 logger = get_logger(__name__)
 
@@ -25,16 +26,16 @@ class CountermeasureClient:
             email: User email for authentication
             password: User password for authentication
         """
-        self.base_url = base_url.rstrip('/')
+        self.base_url = base_url.rstrip("/")
         self.email = email
         self.password = password
-        self.access_token: Optional[str] = None
+        self.access_token: str | None = None
         self.client = httpx.AsyncClient(timeout=30.0)
 
         # Cache for API lookups
-        self._severities_cache: Optional[Dict[str, UUID]] = None
-        self._categories_cache: Dict[str, UUID] = {}
-        self._tags_cache: Dict[str, UUID] = {}
+        self._severities_cache: dict[str, UUID] | None = None
+        self._categories_cache: dict[str, UUID] = {}
+        self._tags_cache: dict[str, UUID] = {}
 
     async def login(self) -> bool:
         """
@@ -48,11 +49,10 @@ class CountermeasureClient:
             login_data = {
                 "email": self.email,
                 "password": self.password,
-                "remember_me": False
+                "remember_me": False,
             }
             response = await self.client.post(
-                f"{self.base_url}/api/v1/auth/login",
-                json=login_data
+                f"{self.base_url}/api/v1/auth/login", json=login_data
             )
 
             if response.status_code == 200:
@@ -60,25 +60,26 @@ class CountermeasureClient:
                 self.access_token = data.get("access_token")
                 logger.info("Successfully authenticated with Countermeasure API")
                 return True
-            else:
-                logger.error(f"Authentication failed: {response.status_code} - {response.text}")
-                return False
-
-        except Exception as e:
-            logger.error(f"Authentication error: {str(e)}")
+            logger.error(
+                f"Authentication failed: {response.status_code} - {response.text}"
+            )
             return False
 
-    def _get_auth_headers(self) -> Dict[str, str]:
+        except Exception as e:
+            logger.error(f"Authentication error: {e!s}")
+            return False
+
+    def _get_auth_headers(self) -> dict[str, str]:
         """Get headers with authentication token."""
         if not self.access_token:
             raise Exception("Not authenticated - call login() first")
 
         return {
             "Authorization": f"Bearer {self.access_token}",
-            "Content-Type": "application/json"
+            "Content-Type": "application/json",
         }
 
-    async def get_severities(self) -> Dict[str, UUID]:
+    async def get_severities(self) -> dict[str, UUID]:
         """
         Get severity levels and cache them.
 
@@ -91,7 +92,7 @@ class CountermeasureClient:
         try:
             response = await self.client.get(
                 f"{self.base_url}/api/v1/detections/severities/",
-                headers=self._get_auth_headers()
+                headers=self._get_auth_headers(),
             )
 
             if response.status_code == 200:
@@ -101,15 +102,16 @@ class CountermeasureClient:
                 }
                 logger.debug(f"Cached {len(self._severities_cache)} severities")
                 return self._severities_cache
-            else:
-                logger.error(f"Failed to fetch severities: {response.status_code}")
-                return {}
-
-        except Exception as e:
-            logger.error(f"Error fetching severities: {str(e)}")
+            logger.error(f"Failed to fetch severities: {response.status_code}")
             return {}
 
-    async def get_or_create_category(self, name: str, description: str = "") -> Optional[UUID]:
+        except Exception as e:
+            logger.error(f"Error fetching severities: {e!s}")
+            return {}
+
+    async def get_or_create_category(
+        self, name: str, description: str = ""
+    ) -> UUID | None:
         """
         Get or create a category by name.
 
@@ -129,7 +131,7 @@ class CountermeasureClient:
             response = await self.client.get(
                 f"{self.base_url}/api/v1/detections/categories/",
                 headers=self._get_auth_headers(),
-                params={"search": name}
+                params={"search": name},
             )
 
             if response.status_code == 200:
@@ -146,10 +148,7 @@ class CountermeasureClient:
             response = await self.client.post(
                 f"{self.base_url}/api/v1/detections/categories/",
                 headers=self._get_auth_headers(),
-                json={
-                    "name": name,
-                    "description": description
-                }
+                json={"name": name, "description": description},
             )
 
             if response.status_code == 201:
@@ -158,15 +157,18 @@ class CountermeasureClient:
                 self._categories_cache[name] = category_id
                 logger.debug(f"Created category: {name}")
                 return category_id
-            else:
-                logger.error(f"Failed to create category {name}: {response.status_code}")
-                return None
-
-        except Exception as e:
-            logger.error(f"Error with category {name}: {str(e)}")
+            logger.error(
+                f"Failed to create category {name}: {response.status_code}"
+            )
             return None
 
-    async def get_or_create_tag(self, name: str, description: str = "") -> Optional[UUID]:
+        except Exception as e:
+            logger.error(f"Error with category {name}: {e!s}")
+            return None
+
+    async def get_or_create_tag(
+        self, name: str, description: str = ""
+    ) -> UUID | None:
         """
         Get or create a tag by name.
 
@@ -186,7 +188,7 @@ class CountermeasureClient:
             response = await self.client.get(
                 f"{self.base_url}/api/v1/detections/tags/",
                 headers=self._get_auth_headers(),
-                params={"search": name}
+                params={"search": name},
             )
 
             if response.status_code == 200:
@@ -203,10 +205,7 @@ class CountermeasureClient:
             response = await self.client.post(
                 f"{self.base_url}/api/v1/detections/tags/",
                 headers=self._get_auth_headers(),
-                json={
-                    "name": name,
-                    "description": description
-                }
+                json={"name": name, "description": description},
             )
 
             if response.status_code == 201:
@@ -215,15 +214,16 @@ class CountermeasureClient:
                 self._tags_cache[name] = tag_id
                 logger.debug(f"Created tag: {name}")
                 return tag_id
-            else:
-                logger.error(f"Failed to create tag {name}: {response.status_code}")
-                return None
-
-        except Exception as e:
-            logger.error(f"Error with tag {name}: {str(e)}")
+            logger.error(f"Failed to create tag {name}: {response.status_code}")
             return None
 
-    async def create_detection(self, detection_data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+        except Exception as e:
+            logger.error(f"Error with tag {name}: {e!s}")
+            return None
+
+    async def create_detection(
+        self, detection_data: dict[str, Any]
+    ) -> dict[str, Any] | None:
         """
         Create a single detection rule.
 
@@ -237,20 +237,23 @@ class CountermeasureClient:
             response = await self.client.post(
                 f"{self.base_url}/api/v1/detections/",
                 headers=self._get_auth_headers(),
-                json=detection_data
+                json=detection_data,
             )
 
             if response.status_code == 201:
                 return response.json()
-            else:
-                logger.error(f"Failed to create detection: {response.status_code} - {response.text}")
-                return None
-
-        except Exception as e:
-            logger.error(f"Error creating detection: {str(e)}")
+            logger.error(
+                f"Failed to create detection: {response.status_code} - {response.text}"
+            )
             return None
 
-    async def batch_create_detections(self, detections: List[Dict[str, Any]], batch_size: int = 50) -> Dict[str, int]:
+        except Exception as e:
+            logger.error(f"Error creating detection: {e!s}")
+            return None
+
+    async def batch_create_detections(
+        self, detections: list[dict[str, Any]], batch_size: int = 50
+    ) -> dict[str, int]:
         """
         Create multiple detection rules in batches.
 
@@ -264,8 +267,10 @@ class CountermeasureClient:
         results = {"successful": 0, "failed": 0, "errors": []}
 
         for i in range(0, len(detections), batch_size):
-            batch = detections[i:i + batch_size]
-            logger.info(f"Processing batch {i//batch_size + 1} ({len(batch)} detections)")
+            batch = detections[i : i + batch_size]
+            logger.info(
+                f"Processing batch {i // batch_size + 1} ({len(batch)} detections)"
+            )
 
             # Process batch concurrently
             tasks = [self.create_detection(detection) for detection in batch]
@@ -286,31 +291,34 @@ class CountermeasureClient:
 
         return results
 
-    async def get_detections(self, limit: int = 1000) -> Optional[Dict[str, Any]]:
+    async def get_detections(self, limit: int = 100) -> dict[str, Any] | None:
         """
         Get all detections from the API.
 
         Args:
-            limit: Maximum number of detections to fetch
+            limit: Maximum number of detections to fetch per page (max 100)
 
         Returns:
             Response data or None if request failed
         """
         try:
+            # API uses per_page parameter, capped at 100
+            per_page = min(limit, 100)
             response = await self.client.get(
                 f"{self.base_url}/api/v1/detections/",
-                params={"limit": limit},
-                headers=self._get_auth_headers()
+                params={"per_page": per_page},
+                headers=self._get_auth_headers(),
             )
 
             if response.status_code == 200:
                 return response.json()
-            else:
-                logger.error(f"Failed to get detections: {response.status_code} - {response.text}")
-                return None
+            logger.error(
+                f"Failed to get detections: {response.status_code} - {response.text}"
+            )
+            return None
 
         except Exception as e:
-            logger.error(f"Error getting detections: {str(e)}")
+            logger.error(f"Error getting detections: {e!s}")
             return None
 
     async def delete_detection(self, detection_id: str) -> bool:
@@ -326,20 +334,21 @@ class CountermeasureClient:
         try:
             response = await self.client.delete(
                 f"{self.base_url}/api/v1/detections/{detection_id}",
-                headers=self._get_auth_headers()
+                headers=self._get_auth_headers(),
             )
 
             if response.status_code == 204:
                 return True
-            else:
-                logger.error(f"Failed to delete detection {detection_id}: {response.status_code} - {response.text}")
-                return False
-
-        except Exception as e:
-            logger.error(f"Error deleting detection {detection_id}: {str(e)}")
+            logger.error(
+                f"Failed to delete detection {detection_id}: {response.status_code} - {response.text}"
+            )
             return False
 
-    async def post(self, url: str, json: Any = None) -> Optional[Dict[str, Any]]:
+        except Exception as e:
+            logger.error(f"Error deleting detection {detection_id}: {e!s}")
+            return False
+
+    async def post(self, url: str, json: Any = None) -> dict[str, Any] | None:
         """
         Make a POST request to the API.
 
@@ -353,22 +362,23 @@ class CountermeasureClient:
         try:
             full_url = f"{self.base_url}{url}"
             response = await self.client.post(
-                full_url,
-                headers=self._get_auth_headers(),
-                json=json
+                full_url, headers=self._get_auth_headers(), json=json
             )
 
             if response.status_code in [200, 201]:
                 return response.json()
-            else:
-                logger.error(f"POST {url} failed: {response.status_code} - {response.text}")
-                return None
-
-        except Exception as e:
-            logger.error(f"Error in POST {url}: {str(e)}")
+            logger.error(
+                f"POST {url} failed: {response.status_code} - {response.text}"
+            )
             return None
 
-    async def get(self, url: str, params: Dict[str, Any] = None) -> Optional[Dict[str, Any]]:
+        except Exception as e:
+            logger.error(f"Error in POST {url}: {e!s}")
+            return None
+
+    async def get(
+        self, url: str, params: dict[str, Any] = None
+    ) -> dict[str, Any] | None:
         """
         Make a GET request to the API.
 
@@ -382,19 +392,18 @@ class CountermeasureClient:
         try:
             full_url = f"{self.base_url}{url}"
             response = await self.client.get(
-                full_url,
-                headers=self._get_auth_headers(),
-                params=params
+                full_url, headers=self._get_auth_headers(), params=params
             )
 
             if response.status_code == 200:
                 return response.json()
-            else:
-                logger.error(f"GET {url} failed: {response.status_code} - {response.text}")
-                return None
+            logger.error(
+                f"GET {url} failed: {response.status_code} - {response.text}"
+            )
+            return None
 
         except Exception as e:
-            logger.error(f"Error in GET {url}: {str(e)}")
+            logger.error(f"Error in GET {url}: {e!s}")
             return None
 
     async def close(self):

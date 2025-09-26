@@ -2,7 +2,6 @@
 MITRE ATT&CK framework seed data.
 """
 
-from typing import Dict, List, Any
 
 # MITRE ATT&CK Tactics
 MITRE_TACTICS = [
@@ -10,74 +9,74 @@ MITRE_TACTICS = [
         "tactic_id": "TA0001",
         "name": "Initial Access",
         "description": "The adversary is trying to get into your network.",
-        "url": "https://attack.mitre.org/tactics/TA0001/"
+        "url": "https://attack.mitre.org/tactics/TA0001/",
     },
     {
         "tactic_id": "TA0002",
         "name": "Execution",
         "description": "The adversary is trying to run malicious code.",
-        "url": "https://attack.mitre.org/tactics/TA0002/"
+        "url": "https://attack.mitre.org/tactics/TA0002/",
     },
     {
         "tactic_id": "TA0003",
         "name": "Persistence",
         "description": "The adversary is trying to maintain their foothold.",
-        "url": "https://attack.mitre.org/tactics/TA0003/"
+        "url": "https://attack.mitre.org/tactics/TA0003/",
     },
     {
         "tactic_id": "TA0004",
         "name": "Privilege Escalation",
         "description": "The adversary is trying to gain higher-level permissions.",
-        "url": "https://attack.mitre.org/tactics/TA0004/"
+        "url": "https://attack.mitre.org/tactics/TA0004/",
     },
     {
         "tactic_id": "TA0005",
         "name": "Defense Evasion",
         "description": "The adversary is trying to avoid being detected.",
-        "url": "https://attack.mitre.org/tactics/TA0005/"
+        "url": "https://attack.mitre.org/tactics/TA0005/",
     },
     {
         "tactic_id": "TA0006",
         "name": "Credential Access",
         "description": "The adversary is trying to steal account names and passwords.",
-        "url": "https://attack.mitre.org/tactics/TA0006/"
+        "url": "https://attack.mitre.org/tactics/TA0006/",
     },
     {
         "tactic_id": "TA0007",
         "name": "Discovery",
         "description": "The adversary is trying to figure out your environment.",
-        "url": "https://attack.mitre.org/tactics/TA0007/"
+        "url": "https://attack.mitre.org/tactics/TA0007/",
     },
     {
         "tactic_id": "TA0008",
         "name": "Lateral Movement",
         "description": "The adversary is trying to move through your environment.",
-        "url": "https://attack.mitre.org/tactics/TA0008/"
+        "url": "https://attack.mitre.org/tactics/TA0008/",
     },
     {
         "tactic_id": "TA0009",
         "name": "Collection",
         "description": "The adversary is trying to gather data of interest to their goal.",
-        "url": "https://attack.mitre.org/tactics/TA0009/"
+        "url": "https://attack.mitre.org/tactics/TA0009/",
     },
     {
         "tactic_id": "TA0010",
         "name": "Exfiltration",
         "description": "The adversary is trying to steal data.",
-        "url": "https://attack.mitre.org/tactics/TA0010/"
+        "url": "https://attack.mitre.org/tactics/TA0010/",
     },
     {
         "tactic_id": "TA0011",
         "name": "Command and Control",
         "description": "The adversary is trying to communicate with compromised systems to control them.",
-        "url": "https://attack.mitre.org/tactics/TA0011/"
+        "url": "https://attack.mitre.org/tactics/TA0011/",
     },
     {
         "tactic_id": "TA0040",
         "name": "Impact",
         "description": "The adversary is trying to manipulate, interrupt, or destroy your systems and data.",
-        "url": "https://attack.mitre.org/tactics/TA0040/"
-    }
+        "url": "https://attack.mitre.org/tactics/TA0040/",
+    },
 ]
 
 # MITRE ATT&CK Techniques (representative set)
@@ -91,7 +90,7 @@ MITRE_TECHNIQUES = [
         "parent_technique_id": None,
         "url": "https://attack.mitre.org/techniques/T1078/",
         "platforms": ["Windows", "macOS", "Linux", "Cloud"],
-        "data_sources": ["Authentication logs", "Process monitoring"]
+        "data_sources": ["Authentication logs", "Process monitoring"],
     },
     {
         "technique_id": "T1078.001",
@@ -101,7 +100,7 @@ MITRE_TECHNIQUES = [
         "parent_technique_id": "T1078",
         "url": "https://attack.mitre.org/techniques/T1078/001/",
         "platforms": ["Windows", "macOS", "Linux"],
-        "data_sources": ["Authentication logs"]
+        "data_sources": ["Authentication logs"],
     },
     {
         "technique_id": "T1190",
@@ -111,7 +110,7 @@ MITRE_TECHNIQUES = [
         "parent_technique_id": None,
         "url": "https://attack.mitre.org/techniques/T1190/",
         "platforms": ["Windows", "macOS", "Linux", "Cloud"],
-        "data_sources": ["Network traffic", "Application logs"]
+        "data_sources": ["Network traffic", "Application logs"],
     },
     {
         "technique_id": "T1566",
@@ -121,7 +120,7 @@ MITRE_TECHNIQUES = [
         "parent_technique_id": None,
         "url": "https://attack.mitre.org/techniques/T1566/",
         "platforms": ["Windows", "macOS", "Linux"],
-        "data_sources": ["Email gateway", "Network traffic"]
+        "data_sources": ["Email gateway", "Network traffic"],
     },
     {
         "technique_id": "T1566.001",
@@ -131,9 +130,8 @@ MITRE_TECHNIQUES = [
         "parent_technique_id": "T1566",
         "url": "https://attack.mitre.org/techniques/T1566/001/",
         "platforms": ["Windows", "macOS", "Linux"],
-        "data_sources": ["Email gateway", "File monitoring"]
+        "data_sources": ["Email gateway", "File monitoring"],
     },
-
     # Execution
     {
         "technique_id": "T1059",
@@ -143,7 +141,7 @@ MITRE_TECHNIQUES = [
         "parent_technique_id": None,
         "url": "https://attack.mitre.org/techniques/T1059/",
         "platforms": ["Windows", "macOS", "Linux"],
-        "data_sources": ["Process monitoring", "Command execution"]
+        "data_sources": ["Process monitoring", "Command execution"],
     },
     {
         "technique_id": "T1059.001",
@@ -153,7 +151,7 @@ MITRE_TECHNIQUES = [
         "parent_technique_id": "T1059",
         "url": "https://attack.mitre.org/techniques/T1059/001/",
         "platforms": ["Windows"],
-        "data_sources": ["PowerShell logs", "Process monitoring"]
+        "data_sources": ["PowerShell logs", "Process monitoring"],
     },
     {
         "technique_id": "T1059.003",
@@ -163,9 +161,8 @@ MITRE_TECHNIQUES = [
         "parent_technique_id": "T1059",
         "url": "https://attack.mitre.org/techniques/T1059/003/",
         "platforms": ["Windows"],
-        "data_sources": ["Process monitoring", "Command execution"]
+        "data_sources": ["Process monitoring", "Command execution"],
     },
-
     # Persistence
     {
         "technique_id": "T1053",
@@ -175,7 +172,7 @@ MITRE_TECHNIQUES = [
         "parent_technique_id": None,
         "url": "https://attack.mitre.org/techniques/T1053/",
         "platforms": ["Windows", "macOS", "Linux"],
-        "data_sources": ["Process monitoring", "Scheduled task logs"]
+        "data_sources": ["Process monitoring", "Scheduled task logs"],
     },
     {
         "technique_id": "T1547",
@@ -185,9 +182,8 @@ MITRE_TECHNIQUES = [
         "parent_technique_id": None,
         "url": "https://attack.mitre.org/techniques/T1547/",
         "platforms": ["Windows", "macOS", "Linux"],
-        "data_sources": ["Process monitoring", "Registry monitoring"]
+        "data_sources": ["Process monitoring", "Registry monitoring"],
     },
-
     # Privilege Escalation
     {
         "technique_id": "T1055",
@@ -197,7 +193,7 @@ MITRE_TECHNIQUES = [
         "parent_technique_id": None,
         "url": "https://attack.mitre.org/techniques/T1055/",
         "platforms": ["Windows", "macOS", "Linux"],
-        "data_sources": ["Process monitoring", "API monitoring"]
+        "data_sources": ["Process monitoring", "API monitoring"],
     },
     {
         "technique_id": "T1055.001",
@@ -207,9 +203,8 @@ MITRE_TECHNIQUES = [
         "parent_technique_id": "T1055",
         "url": "https://attack.mitre.org/techniques/T1055/001/",
         "platforms": ["Windows"],
-        "data_sources": ["Process monitoring", "DLL monitoring"]
+        "data_sources": ["Process monitoring", "DLL monitoring"],
     },
-
     # Defense Evasion
     {
         "technique_id": "T1070",
@@ -219,7 +214,7 @@ MITRE_TECHNIQUES = [
         "parent_technique_id": None,
         "url": "https://attack.mitre.org/techniques/T1070/",
         "platforms": ["Windows", "macOS", "Linux"],
-        "data_sources": ["File monitoring", "Process monitoring"]
+        "data_sources": ["File monitoring", "Process monitoring"],
     },
     {
         "technique_id": "T1027",
@@ -229,9 +224,8 @@ MITRE_TECHNIQUES = [
         "parent_technique_id": None,
         "url": "https://attack.mitre.org/techniques/T1027/",
         "platforms": ["Windows", "macOS", "Linux"],
-        "data_sources": ["File monitoring", "Process monitoring"]
+        "data_sources": ["File monitoring", "Process monitoring"],
     },
-
     # Credential Access
     {
         "technique_id": "T1003",
@@ -241,7 +235,7 @@ MITRE_TECHNIQUES = [
         "parent_technique_id": None,
         "url": "https://attack.mitre.org/techniques/T1003/",
         "platforms": ["Windows", "macOS", "Linux"],
-        "data_sources": ["Process monitoring", "API monitoring"]
+        "data_sources": ["Process monitoring", "API monitoring"],
     },
     {
         "technique_id": "T1003.001",
@@ -251,9 +245,8 @@ MITRE_TECHNIQUES = [
         "parent_technique_id": "T1003",
         "url": "https://attack.mitre.org/techniques/T1003/001/",
         "platforms": ["Windows"],
-        "data_sources": ["Process monitoring", "Process access"]
+        "data_sources": ["Process monitoring", "Process access"],
     },
-
     # Discovery
     {
         "technique_id": "T1082",
@@ -263,7 +256,7 @@ MITRE_TECHNIQUES = [
         "parent_technique_id": None,
         "url": "https://attack.mitre.org/techniques/T1082/",
         "platforms": ["Windows", "macOS", "Linux"],
-        "data_sources": ["Process monitoring", "Command execution"]
+        "data_sources": ["Process monitoring", "Command execution"],
     },
     {
         "technique_id": "T1018",
@@ -273,9 +266,8 @@ MITRE_TECHNIQUES = [
         "parent_technique_id": None,
         "url": "https://attack.mitre.org/techniques/T1018/",
         "platforms": ["Windows", "macOS", "Linux"],
-        "data_sources": ["Network traffic", "Process monitoring"]
+        "data_sources": ["Network traffic", "Process monitoring"],
     },
-
     # Lateral Movement
     {
         "technique_id": "T1021",
@@ -285,7 +277,7 @@ MITRE_TECHNIQUES = [
         "parent_technique_id": None,
         "url": "https://attack.mitre.org/techniques/T1021/",
         "platforms": ["Windows", "macOS", "Linux"],
-        "data_sources": ["Authentication logs", "Network traffic"]
+        "data_sources": ["Authentication logs", "Network traffic"],
     },
     {
         "technique_id": "T1021.001",
@@ -295,9 +287,8 @@ MITRE_TECHNIQUES = [
         "parent_technique_id": "T1021",
         "url": "https://attack.mitre.org/techniques/T1021/001/",
         "platforms": ["Windows"],
-        "data_sources": ["Authentication logs", "Network traffic"]
+        "data_sources": ["Authentication logs", "Network traffic"],
     },
-
     # Collection
     {
         "technique_id": "T1560",
@@ -307,9 +298,8 @@ MITRE_TECHNIQUES = [
         "parent_technique_id": None,
         "url": "https://attack.mitre.org/techniques/T1560/",
         "platforms": ["Windows", "macOS", "Linux"],
-        "data_sources": ["File monitoring", "Process monitoring"]
+        "data_sources": ["File monitoring", "Process monitoring"],
     },
-
     # Exfiltration
     {
         "technique_id": "T1041",
@@ -319,9 +309,8 @@ MITRE_TECHNIQUES = [
         "parent_technique_id": None,
         "url": "https://attack.mitre.org/techniques/T1041/",
         "platforms": ["Windows", "macOS", "Linux"],
-        "data_sources": ["Network traffic", "Process monitoring"]
+        "data_sources": ["Network traffic", "Process monitoring"],
     },
-
     # Command and Control
     {
         "technique_id": "T1071",
@@ -331,7 +320,7 @@ MITRE_TECHNIQUES = [
         "parent_technique_id": None,
         "url": "https://attack.mitre.org/techniques/T1071/",
         "platforms": ["Windows", "macOS", "Linux"],
-        "data_sources": ["Network traffic", "Process monitoring"]
+        "data_sources": ["Network traffic", "Process monitoring"],
     },
     {
         "technique_id": "T1071.001",
@@ -341,9 +330,8 @@ MITRE_TECHNIQUES = [
         "parent_technique_id": "T1071",
         "url": "https://attack.mitre.org/techniques/T1071/001/",
         "platforms": ["Windows", "macOS", "Linux"],
-        "data_sources": ["Network traffic", "Process monitoring"]
+        "data_sources": ["Network traffic", "Process monitoring"],
     },
-
     # Impact
     {
         "technique_id": "T1486",
@@ -353,7 +341,7 @@ MITRE_TECHNIQUES = [
         "parent_technique_id": None,
         "url": "https://attack.mitre.org/techniques/T1486/",
         "platforms": ["Windows", "macOS", "Linux"],
-        "data_sources": ["File monitoring", "Process monitoring"]
+        "data_sources": ["File monitoring", "Process monitoring"],
     },
     {
         "technique_id": "T1489",
@@ -363,8 +351,8 @@ MITRE_TECHNIQUES = [
         "parent_technique_id": None,
         "url": "https://attack.mitre.org/techniques/T1489/",
         "platforms": ["Windows", "macOS", "Linux"],
-        "data_sources": ["Service monitoring", "Process monitoring"]
-    }
+        "data_sources": ["Service monitoring", "Process monitoring"],
+    },
 ]
 
 # Severity levels
@@ -373,24 +361,24 @@ SEVERITY_LEVELS = [
         "name": "Low",
         "level": 1,
         "color": "#28a745",  # Green
-        "description": "Low risk detection with minimal impact"
+        "description": "Low risk detection with minimal impact",
     },
     {
         "name": "Medium",
         "level": 2,
         "color": "#ffc107",  # Yellow
-        "description": "Moderate risk detection requiring attention"
+        "description": "Moderate risk detection requiring attention",
     },
     {
         "name": "High",
         "level": 3,
         "color": "#fd7e14",  # Orange
-        "description": "High risk detection requiring immediate attention"
+        "description": "High risk detection requiring immediate attention",
     },
     {
         "name": "Critical",
         "level": 4,
         "color": "#dc3545",  # Red
-        "description": "Critical risk detection requiring urgent response"
-    }
+        "description": "Critical risk detection requiring urgent response",
+    },
 ]

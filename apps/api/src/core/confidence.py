@@ -2,9 +2,9 @@
 Confidence scoring algorithms for threat intelligence data.
 """
 
-from datetime import datetime, timedelta
-from typing import List, Optional, Dict, Any
 import math
+from datetime import datetime
+from typing import Any
 
 
 class ConfidenceAlgorithms:
@@ -19,7 +19,7 @@ class ConfidenceAlgorithms:
     def calculate_source_confidence(
         source_reputation: float,
         source_track_record: int,
-        source_verification_level: str
+        source_verification_level: str,
     ) -> float:
         """
         Calculate confidence based on intelligence source characteristics.
@@ -36,15 +36,15 @@ class ConfidenceAlgorithms:
         reputation_score = source_reputation * 0.6
 
         # Track record weight (30%) with logarithmic scaling
-        track_record_score = min(1.0, math.log10(max(1, source_track_record)) / 3.0) * 0.3
+        track_record_score = (
+            min(1.0, math.log10(max(1, source_track_record)) / 3.0) * 0.3
+        )
 
         # Verification level weight (10%)
-        verification_scores = {
-            "verified": 1.0,
-            "unverified": 0.5,
-            "unknown": 0.2
-        }
-        verification_score = verification_scores.get(source_verification_level, 0.2) * 0.1
+        verification_scores = {"verified": 1.0, "unverified": 0.5, "unknown": 0.2}
+        verification_score = (
+            verification_scores.get(source_verification_level, 0.2) * 0.1
+        )
 
         return min(1.0, reputation_score + track_record_score + verification_score)
 
@@ -52,7 +52,7 @@ class ConfidenceAlgorithms:
     def calculate_temporal_decay(
         observation_date: datetime,
         half_life_days: int = 365,
-        current_date: Optional[datetime] = None
+        current_date: datetime | None = None,
     ) -> float:
         """
         Calculate temporal decay factor for intelligence data.
@@ -86,7 +86,7 @@ class ConfidenceAlgorithms:
         behavioral_patterns: int,
         infrastructure_overlap: int,
         timeline_correlation: float,
-        witness_reports: int = 0
+        witness_reports: int = 0,
     ) -> float:
         """
         Calculate threat actor attribution confidence.
@@ -104,15 +104,21 @@ class ConfidenceAlgorithms:
         factors = []
 
         # Technical indicators (30% weight)
-        tech_score = min(1.0, technical_indicators / 10.0)  # Normalized to 10+ indicators = 1.0
+        tech_score = min(
+            1.0, technical_indicators / 10.0
+        )  # Normalized to 10+ indicators = 1.0
         factors.append(tech_score * 0.3)
 
         # Behavioral patterns (25% weight)
-        behavior_score = min(1.0, behavioral_patterns / 8.0)  # Normalized to 8+ patterns = 1.0
+        behavior_score = min(
+            1.0, behavioral_patterns / 8.0
+        )  # Normalized to 8+ patterns = 1.0
         factors.append(behavior_score * 0.25)
 
         # Infrastructure overlap (20% weight)
-        infra_score = min(1.0, infrastructure_overlap / 5.0)  # Normalized to 5+ overlaps = 1.0
+        infra_score = min(
+            1.0, infrastructure_overlap / 5.0
+        )  # Normalized to 5+ overlaps = 1.0
         factors.append(infra_score * 0.2)
 
         # Timeline correlation (15% weight)
@@ -130,7 +136,7 @@ class ConfidenceAlgorithms:
         false_positive_rate: float,
         deployment_coverage: float,
         validation_tests: int,
-        production_detections: int = 0
+        production_detections: int = 0,
     ) -> float:
         """
         Calculate detection rule confidence based on performance metrics.
@@ -158,11 +164,15 @@ class ConfidenceAlgorithms:
         factors.append(deployment_coverage * 0.2)
 
         # Validation thoroughness (15% weight)
-        validation_score = min(1.0, validation_tests / 20.0)  # Normalized to 20+ tests = 1.0
+        validation_score = min(
+            1.0, validation_tests / 20.0
+        )  # Normalized to 20+ tests = 1.0
         factors.append(validation_score * 0.15)
 
         # Production validation (5% weight)
-        production_score = min(1.0, production_detections / 10.0)  # Normalized to 10+ detections = 1.0
+        production_score = min(
+            1.0, production_detections / 10.0
+        )  # Normalized to 10+ detections = 1.0
         factors.append(production_score * 0.05)
 
         return min(1.0, sum(factors))
@@ -173,7 +183,7 @@ class ConfidenceAlgorithms:
         corroboration_count: int,
         technical_validation: bool,
         analyst_assessment: float,
-        temporal_relevance: float
+        temporal_relevance: float,
     ) -> float:
         """
         Calculate overall intelligence confidence score.
@@ -194,7 +204,9 @@ class ConfidenceAlgorithms:
         factors.append(source_confidence * 0.3)
 
         # Corroboration (25% weight)
-        corroboration_score = min(1.0, corroboration_count / 3.0)  # Normalized to 3+ sources = 1.0
+        corroboration_score = min(
+            1.0, corroboration_count / 3.0
+        )  # Normalized to 3+ sources = 1.0
         factors.append(corroboration_score * 0.25)
 
         # Technical validation (20% weight)
@@ -211,8 +223,7 @@ class ConfidenceAlgorithms:
 
     @staticmethod
     def calculate_composite_confidence(
-        confidence_scores: List[float],
-        weights: Optional[List[float]] = None
+        confidence_scores: list[float], weights: list[float] | None = None
     ) -> float:
         """
         Calculate weighted composite confidence from multiple scores.
@@ -241,7 +252,10 @@ class ConfidenceAlgorithms:
         normalized_weights = [w / total_weight for w in weights]
 
         # Calculate weighted average
-        weighted_sum = sum(score * weight for score, weight in zip(confidence_scores, normalized_weights))
+        weighted_sum = sum(
+            score * weight
+            for score, weight in zip(confidence_scores, normalized_weights, strict=False)
+        )
 
         return min(1.0, max(0.0, weighted_sum))
 
@@ -258,14 +272,13 @@ class ConfidenceAlgorithms:
         """
         if confidence_score >= 0.9:
             return "Very High"
-        elif confidence_score >= 0.7:
+        if confidence_score >= 0.7:
             return "High"
-        elif confidence_score >= 0.5:
+        if confidence_score >= 0.5:
             return "Medium"
-        elif confidence_score >= 0.3:
+        if confidence_score >= 0.3:
             return "Low"
-        else:
-            return "Very Low"
+        return "Very Low"
 
     @staticmethod
     def get_confidence_color(confidence_score: float) -> str:
@@ -283,7 +296,7 @@ class ConfidenceAlgorithms:
             0.7: "#66BB6A",  # Green - High
             0.5: "#FFA726",  # Orange - Medium
             0.3: "#FF7043",  # Red-orange - Low
-            0.0: "#E53935"   # Red - Very Low
+            0.0: "#E53935",  # Red - Very Low
         }
 
         for threshold in sorted(confidence_colors.keys(), reverse=True):
@@ -304,9 +317,9 @@ class ConfidenceHistory:
         entity_type: str,
         confidence_score: float,
         calculation_method: str,
-        factors: Dict[str, Any],
-        timestamp: Optional[datetime] = None
-    ) -> Dict[str, Any]:
+        factors: dict[str, Any],
+        timestamp: datetime | None = None,
+    ) -> dict[str, Any]:
         """
         Create a confidence calculation snapshot for audit trail.
 
@@ -331,5 +344,7 @@ class ConfidenceHistory:
             "calculation_method": calculation_method,
             "factors": factors,
             "timestamp": timestamp.isoformat(),
-            "confidence_level": ConfidenceAlgorithms.get_confidence_level_description(confidence_score)
+            "confidence_level": ConfidenceAlgorithms.get_confidence_level_description(
+                confidence_score
+            ),
         }

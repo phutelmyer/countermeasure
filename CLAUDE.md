@@ -26,6 +26,10 @@ Countermeasure is a threat detection confidence platform that ingests, enriches,
 - **Database**: PostgreSQL with Alembic migrations, multi-tenant design
 - **API**: FastAPI with automatic OpenAPI documentation
 - **Scripts**: Enterprise import utilities with batch processing
+- **CI/CD**: GitHub Actions with comprehensive testing and security scanning
+- **Code Quality**: Pre-commit hooks, ruff formatting, type checking
+- **Monitoring**: Prometheus metrics, structured logging, health dashboards
+- **Error Tracking**: Sentry integration for production error monitoring
 
 ### Enterprise Vision (Planned 📋)
 
@@ -53,6 +57,8 @@ uv run uvicorn src.main:app --host 0.0.0.0 --port 8000
 **API Endpoints:**
 - API Docs: http://localhost:8000/docs
 - Health Check: http://localhost:8000/health
+- Health Dashboard: http://localhost:8000/health/dashboard
+- Prometheus Metrics: http://localhost:8000/metrics
 
 ### 2. Initialize Database
 
@@ -328,6 +334,127 @@ async def test():
 asyncio.run(test())
 "
 ```
+
+## Testing
+
+### Running Tests
+
+#### API Tests
+```bash
+# Run all API tests
+cd apps/api
+uv run pytest tests/ -v
+
+# Run specific test modules
+uv run pytest tests/unit/test_auth.py -v
+uv run pytest tests/unit/test_detection_service.py -v
+uv run pytest tests/integration/ -v
+
+# Run with coverage
+uv run pytest tests/ --cov=src --cov-report=html --cov-report=term-missing
+
+# Run performance tests
+uv run pytest tests/performance/ -v
+```
+
+#### Collector Tests
+```bash
+# Run all collector tests
+cd apps/collector
+uv run pytest tests/ -v
+
+# Test SIGMA parser specifically
+uv run pytest tests/unit/test_sigma_parser.py -v
+
+# Test API client
+uv run pytest tests/unit/test_api_client.py -v
+```
+
+#### Integration Testing
+```bash
+# Test complete authentication flow
+curl -X POST "http://localhost:8000/api/v1/auth/login" \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -d "email=admin@countermeasure.dev&password=CountermeasureAdmin123!"
+
+# Test detection creation
+curl -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -X POST "http://localhost:8000/api/v1/detections/" \
+  -d '{"name":"Test Detection","description":"Test","content":"title: Test","format":"sigma"}'
+
+# Test SIGMA collection
+cd apps/collector
+uv run python -m src.collectors.detection.sigma --limit 10 --dry-run
+```
+
+#### Load Testing
+```bash
+# Start API server
+cd apps/api
+uv run uvicorn src.main:app --host 0.0.0.0 --port 8000
+
+# Run Locust load tests (in another terminal)
+cd apps/api
+uv run locust -f tests/performance/test_load.py --host http://localhost:8000
+```
+
+### Test Categories
+
+#### Unit Tests
+- **Auth Service**: User authentication, token management, password handling
+- **Detection Service**: CRUD operations, search, validation
+- **Actor Service**: Threat actor management, relationships
+- **SIGMA Parser**: Rule parsing, metadata extraction, validation
+- **API Client**: HTTP communication, authentication, error handling
+
+#### Integration Tests
+- **Database Operations**: Multi-tenant isolation, migrations, transactions
+- **API Endpoints**: End-to-end request/response flows
+- **Collection Pipelines**: Git cloning, parsing, API submission
+- **Authentication Flows**: Login, refresh, password reset
+
+#### Performance Tests
+- **API Load Testing**: Concurrent users, response times, throughput
+- **Database Performance**: Query optimization, indexing, bulk operations
+- **Memory Usage**: Large dataset processing, memory leaks
+- **Parsing Speed**: SIGMA rule processing benchmarks
+
+### Code Quality
+
+#### Pre-commit Hooks
+```bash
+# Install pre-commit hooks
+pre-commit install
+
+# Run manually
+pre-commit run --all-files
+
+# Update hooks
+pre-commit autoupdate
+```
+
+#### Code Formatting and Linting
+```bash
+# Format code with ruff
+uv run ruff format apps/ scripts/
+
+# Check linting
+uv run ruff check apps/ scripts/
+
+# Type checking
+cd apps/api && uv run mypy src/
+cd apps/collector && uv run mypy src/
+
+# Security scanning
+cd apps/api && uv run bandit -r src/
+cd apps/collector && uv run bandit -r src/
+```
+
+#### Test Coverage
+- **Target**: 80%+ coverage for all modules
+- **Critical paths**: 95%+ coverage for auth, security, data processing
+- **Reports**: HTML coverage reports generated in `htmlcov/`
 
 ## Development Workflow
 

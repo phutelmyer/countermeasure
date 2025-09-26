@@ -4,8 +4,8 @@ Handles JWT tokens, password hashing, and security validations.
 """
 
 import secrets
-from datetime import datetime, timedelta, timezone
-from typing import Any, Dict, Optional, Union
+from datetime import UTC, datetime, timedelta
+from typing import Any
 
 from jose import JWTError, jwt
 from passlib.context import CryptContext
@@ -15,6 +15,7 @@ from .config import settings
 from .exceptions import AuthenticationError, AuthorizationError
 from .logging import get_logger
 
+
 logger = get_logger(__name__)
 
 # Password hashing context
@@ -22,15 +23,15 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
 def create_access_token(
-    subject: Union[str, Any],
-    expires_delta: Optional[timedelta] = None,
-    additional_claims: Optional[Dict[str, Any]] = None
+    subject: str | Any,
+    expires_delta: timedelta | None = None,
+    additional_claims: dict[str, Any] | None = None,
 ) -> str:
     """Create a JWT access token."""
     if expires_delta:
-        expire = datetime.now(timezone.utc) + expires_delta
+        expire = datetime.now(UTC) + expires_delta
     else:
-        expire = datetime.now(timezone.utc) + timedelta(
+        expire = datetime.now(UTC) + timedelta(
             minutes=settings.access_token_expire_minutes
         )
 
@@ -38,31 +39,29 @@ def create_access_token(
         "exp": expire,
         "sub": str(subject),
         "type": "access_token",
-        "iat": datetime.now(timezone.utc),
+        "iat": datetime.now(UTC),
     }
 
     if additional_claims:
         to_encode.update(additional_claims)
 
     encoded_jwt = jwt.encode(
-        to_encode,
-        settings.secret_key,
-        algorithm=settings.algorithm
+        to_encode, settings.secret_key, algorithm=settings.algorithm
     )
 
     logger.info(
         "access_token_created",
         subject=str(subject),
         expires_at=expire,
-        additional_claims=list(additional_claims.keys()) if additional_claims else None
+        additional_claims=list(additional_claims.keys()) if additional_claims else None,
     )
 
     return encoded_jwt
 
 
-def create_refresh_token(subject: Union[str, Any]) -> str:
+def create_refresh_token(subject: str | Any) -> str:
     """Create a JWT refresh token."""
-    expire = datetime.now(timezone.utc) + timedelta(
+    expire = datetime.now(UTC) + timedelta(
         days=settings.refresh_token_expire_days
     )
 
@@ -70,33 +69,85 @@ def create_refresh_token(subject: Union[str, Any]) -> str:
         "exp": expire,
         "sub": str(subject),
         "type": "refresh_token",
-        "iat": datetime.now(timezone.utc),
+        "iat": datetime.now(UTC),
         "jti": secrets.token_urlsafe(32),  # Unique token ID for revocation
     }
 
     encoded_jwt = jwt.encode(
-        to_encode,
-        settings.secret_key,
-        algorithm=settings.algorithm
+        to_encode, settings.secret_key, algorithm=settings.algorithm
     )
 
     logger.info(
         "refresh_token_created",
         subject=str(subject),
         expires_at=expire,
-        jti=to_encode["jti"]
+        jti=to_encode["jti"],
     )
 
     return encoded_jwt
 
 
-def verify_token(token: str, token_type: str = "access_token") -> Dict[str, Any]:
+def create_password_reset_token(subject: str | Any) -> str:
+    """Create a JWT password reset token."""
+    expire = datetime.now(UTC) + timedelta(
+        hours=1  # Password reset tokens expire in 1 hour
+    )
+
+    to_encode = {
+        "exp": expire,
+        "sub": str(subject),
+        "type": "password_reset",
+        "iat": datetime.now(UTC),
+        "jti": secrets.token_urlsafe(32),  # Unique token ID
+    }
+
+    encoded_jwt = jwt.encode(
+        to_encode, settings.secret_key, algorithm=settings.algorithm
+    )
+
+    logger.info(
+        "password_reset_token_created",
+        subject=str(subject),
+        expires_at=expire,
+        jti=to_encode["jti"],
+    )
+
+    return encoded_jwt
+
+
+def create_email_verification_token(subject: str | Any) -> str:
+    """Create a JWT email verification token."""
+    expire = datetime.now(UTC) + timedelta(
+        hours=24  # Email verification tokens expire in 24 hours
+    )
+
+    to_encode = {
+        "exp": expire,
+        "sub": str(subject),
+        "type": "email_verification",
+        "iat": datetime.now(UTC),
+        "jti": secrets.token_urlsafe(32),  # Unique token ID
+    }
+
+    encoded_jwt = jwt.encode(
+        to_encode, settings.secret_key, algorithm=settings.algorithm
+    )
+
+    logger.info(
+        "email_verification_token_created",
+        subject=str(subject),
+        expires_at=expire,
+        jti=to_encode["jti"],
+    )
+
+    return encoded_jwt
+
+
+def verify_token(token: str, token_type: str = "access_token") -> dict[str, Any]:
     """Verify and decode a JWT token."""
     try:
         payload = jwt.decode(
-            token,
-            settings.secret_key,
-            algorithms=[settings.algorithm]
+            token, settings.secret_key, algorithms=[settings.algorithm]
         )
 
         # Verify token type
@@ -108,7 +159,7 @@ def verify_token(token: str, token_type: str = "access_token") -> Dict[str, Any]
         if exp is None:
             raise AuthenticationError("Token missing expiration")
 
-        if datetime.fromtimestamp(exp, tz=timezone.utc) < datetime.now(timezone.utc):
+        if datetime.fromtimestamp(exp, tz=UTC) < datetime.now(UTC):
             raise AuthenticationError("Token has expired")
 
         # Verify subject
@@ -120,7 +171,7 @@ def verify_token(token: str, token_type: str = "access_token") -> Dict[str, Any]
             "token_verified",
             subject=sub,
             token_type=token_type,
-            expires_at=datetime.fromtimestamp(exp, tz=timezone.utc)
+            expires_at=datetime.fromtimestamp(exp, tz=UTC),
         )
 
         return payload
@@ -196,7 +247,7 @@ class RoleChecker:
         "admin": ["admin", "analyst", "viewer", "collector"],
         "analyst": ["analyst", "viewer"],
         "viewer": ["viewer"],
-        "collector": ["collector"]
+        "collector": ["collector"],
     }
 
     @classmethod
@@ -210,9 +261,7 @@ class RoleChecker:
         """Check role access and raise exception if unauthorized."""
         if not cls.has_role(user_role, required_role):
             logger.warning(
-                "authorization_failed",
-                user_role=user_role,
-                required_role=required_role
+                "authorization_failed", user_role=user_role, required_role=required_role
             )
             raise AuthorizationError(
                 f"Role '{user_role}' does not have access to '{required_role}' resources"

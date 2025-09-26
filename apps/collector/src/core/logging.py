@@ -4,10 +4,9 @@ Logging configuration for the collector service.
 
 import logging
 import sys
-from typing import Optional
 
 
-def get_logger(name: str, level: Optional[str] = None) -> logging.Logger:
+def get_logger(name: str, level: str | None = None) -> logging.Logger:
     """
     Get a configured logger instance.
 
@@ -27,7 +26,7 @@ def get_logger(name: str, level: Optional[str] = None) -> logging.Logger:
 
         # Create formatter
         formatter = logging.Formatter(
-            '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+            "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
         )
         handler.setFormatter(formatter)
 

@@ -4,16 +4,15 @@ Creates tables and default tenant for easy onboarding.
 """
 
 import asyncio
-from typing import Optional
 
 from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.core.config import settings
 from src.core.logging import get_logger
 from src.core.security import get_password_hash
 from src.db.models.system import Tenant, User
 from src.db.session import get_db_context, run_migrations
+
 
 logger = get_logger(__name__)
 
@@ -45,21 +44,23 @@ async def create_default_tenant() -> Tenant:
                 "theme": "dark",
                 "timezone": "UTC",
                 "max_file_size_mb": 50,
-                "welcome_message": "Welcome to Countermeasure - your threat detection confidence platform!"
+                "welcome_message": "Welcome to Countermeasure - your threat detection confidence platform!",
             },
             max_users=1000,  # Higher limit for default tenant
             max_storage_gb=100,
-            is_active=True
+            is_active=True,
         )
 
         db.add(tenant)
         await db.commit()
 
-        logger.info("default_tenant_created", tenant_id=str(tenant.id), slug=tenant.slug)
+        logger.info(
+            "default_tenant_created", tenant_id=str(tenant.id), slug=tenant.slug
+        )
         return tenant
 
 
-async def create_default_admin(tenant: Tenant) -> Optional[User]:
+async def create_default_admin(tenant: Tenant) -> User | None:
     """
     Create default admin user if none exists.
 
@@ -75,7 +76,7 @@ async def create_default_admin(tenant: Tenant) -> Optional[User]:
             select(User).where(
                 User.tenant_id == tenant.id,
                 User.role == "admin",
-                User.is_active == True
+                User.is_active == True,
             )
         )
         existing_admin = result.scalars().first()
@@ -100,8 +101,8 @@ async def create_default_admin(tenant: Tenant) -> Optional[User]:
             settings={
                 "theme": "dark",
                 "notifications_enabled": True,
-                "tutorial_completed": False
-            }
+                "tutorial_completed": False,
+            },
         )
 
         db.add(admin_user)
@@ -111,7 +112,7 @@ async def create_default_admin(tenant: Tenant) -> Optional[User]:
             "default_admin_created",
             user_id=str(admin_user.id),
             email=admin_email,
-            tenant_id=str(tenant.id)
+            tenant_id=str(tenant.id),
         )
 
         return admin_user
@@ -129,9 +130,7 @@ async def seed_demo_data(tenant: Tenant) -> None:
         demo_email = "analyst@countermeasure.dev"
 
         # Check if demo user already exists
-        result = await db.execute(
-            select(User).where(User.email == demo_email)
-        )
+        result = await db.execute(select(User).where(User.email == demo_email))
         existing_user = result.scalar_one_or_none()
 
         if not existing_user:
@@ -147,8 +146,8 @@ async def seed_demo_data(tenant: Tenant) -> None:
                 settings={
                     "theme": "dark",
                     "notifications_enabled": True,
-                    "tutorial_completed": True
-                }
+                    "tutorial_completed": True,
+                },
             )
 
             db.add(demo_user)
@@ -158,7 +157,7 @@ async def seed_demo_data(tenant: Tenant) -> None:
                 "demo_user_created",
                 user_id=str(demo_user.id),
                 email=demo_email,
-                role="analyst"
+                role="analyst",
             )
 
 
@@ -185,6 +184,7 @@ async def init_database() -> None:
 
             # Seed actor sample data
             from src.db.seed_data.seed_actors import seed_actors
+
             if admin_user:
                 await seed_actors(tenant.id, admin_user.id)
 
@@ -193,25 +193,31 @@ async def init_database() -> None:
         # from src.db.seed_data.seed_mitre_async import seed_mitre_data_async, get_mitre_stats_async
         # await seed_mitre_data_async()
         # mitre_stats = await get_mitre_stats_async()
-        mitre_stats = {"tactics": 0, "techniques": 0, "parent_techniques": 0, "sub_techniques": 0, "severities": 0}
+        mitre_stats = {
+            "tactics": 0,
+            "techniques": 0,
+            "parent_techniques": 0,
+            "sub_techniques": 0,
+            "severities": 0,
+        }
 
         logger.info(
             "database_initialization_completed",
             tenant_id=str(tenant.id),
-            admin_created=admin_user is not None
+            admin_created=admin_user is not None,
         )
 
         # Print helpful information
         if admin_user:
-            print("\n" + "="*60)
+            print("\n" + "=" * 60)
             print("🎉 COUNTERMEASURE DATABASE INITIALIZED SUCCESSFULLY!")
-            print("="*60)
-            print(f"📧 Admin Email: admin@countermeasure.dev")
-            print(f"🔐 Admin Password: CountermeasureAdmin123!")
+            print("=" * 60)
+            print("📧 Admin Email: admin@countermeasure.dev")
+            print("🔐 Admin Password: CountermeasureAdmin123!")
             print(f"🏢 Default Tenant: {tenant.name} ({tenant.slug})")
-            print(f"🌐 API Base URL: http://localhost:8000")
-            print(f"📚 API Docs: http://localhost:8000/docs")
-            print("="*60)
+            print("🌐 API Base URL: http://localhost:8000")
+            print("📚 API Docs: http://localhost:8000/docs")
+            print("=" * 60)
 
             if settings.is_development:
                 print("🧪 Demo analyst account also created:")
@@ -223,10 +229,10 @@ async def init_database() -> None:
                 print("• APT29 - Nation-state espionage group")
                 print("• Sample campaigns and malware families included")
 
-            print(f"\n⚠️ MITRE ATT&CK data seeding temporarily disabled:")
+            print("\n⚠️ MITRE ATT&CK data seeding temporarily disabled:")
             print("• MITRE models need foreign key constraint fixes")
             print("• Will be re-enabled once constraints are resolved")
-            print("="*60)
+            print("=" * 60)
 
     except Exception as e:
         logger.error("database_initialization_failed", error=str(e))

@@ -2,12 +2,13 @@
 Multi-tenant security middleware for row-level security enforcement.
 """
 
-from typing import Callable
+from collections.abc import Callable
 
 from fastapi import Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware
 
 from src.core.logging import get_logger
+
 
 logger = get_logger(__name__)
 
@@ -43,7 +44,8 @@ class TenantIsolationMiddleware(BaseHTTPMiddleware):
 
             # Add tenant info to response headers for debugging (in development only)
             from src.core.config import settings
-            if settings.is_development and hasattr(request.state, 'tenant_id'):
+
+            if settings.is_development and hasattr(request.state, "tenant_id"):
                 if request.state.tenant_id:
                     response.headers["X-Tenant-ID"] = str(request.state.tenant_id)
 
@@ -54,7 +56,7 @@ class TenantIsolationMiddleware(BaseHTTPMiddleware):
                 "tenant_middleware_error",
                 error=str(e),
                 path=request.url.path,
-                method=request.method
+                method=request.method,
             )
             raise
 
@@ -72,7 +74,7 @@ class AuditMiddleware(BaseHTTPMiddleware):
         "/metrics",
         "/docs",
         "/redoc",
-        "/openapi.json"
+        "/openapi.json",
     }
 
     async def dispatch(self, request: Request, call_next: Callable) -> Response:
@@ -109,8 +111,8 @@ class AuditMiddleware(BaseHTTPMiddleware):
                     status_code=response.status_code,
                     ip_address=ip_address,
                     user_agent=user_agent,
-                    user_id=getattr(request.state, 'user_id', None),
-                    tenant_id=getattr(request.state, 'tenant_id', None)
+                    user_id=getattr(request.state, "user_id", None),
+                    tenant_id=getattr(request.state, "tenant_id", None),
                 )
 
             return response
@@ -124,7 +126,7 @@ class AuditMiddleware(BaseHTTPMiddleware):
                 error=str(e),
                 ip_address=ip_address,
                 user_agent=user_agent,
-                user_id=getattr(request.state, 'user_id', None),
-                tenant_id=getattr(request.state, 'tenant_id', None)
+                user_id=getattr(request.state, "user_id", None),
+                tenant_id=getattr(request.state, "tenant_id", None),
             )
             raise

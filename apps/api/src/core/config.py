@@ -3,8 +3,6 @@ Core configuration management for Countermeasure API.
 Handles environment variables, secrets, and application settings.
 """
 
-import os
-from typing import Any, Dict, List, Optional
 
 from pydantic import Field, validator
 from pydantic_settings import BaseSettings
@@ -43,38 +41,50 @@ class Settings(BaseSettings):
     secret_key: str = Field(
         default="your-super-secret-key-change-this-in-production", env="SECRET_KEY"
     )
-    access_token_expire_minutes: int = Field(default=15, env="ACCESS_TOKEN_EXPIRE_MINUTES")
+    access_token_expire_minutes: int = Field(
+        default=15, env="ACCESS_TOKEN_EXPIRE_MINUTES"
+    )
     refresh_token_expire_days: int = Field(default=7, env="REFRESH_TOKEN_EXPIRE_DAYS")
     algorithm: str = Field(default="HS256", env="ALGORITHM")
 
     # CORS Configuration
-    allowed_origins: List[str] = Field(
-        default=["http://localhost:3000", "http://localhost:8080"], env="ALLOWED_ORIGINS"
+    allowed_origins: list[str] = Field(
+        default=["http://localhost:3000", "http://localhost:8080"],
+        env="ALLOWED_ORIGINS",
     )
-    allowed_methods: List[str] = Field(default=["*"], env="ALLOWED_METHODS")
-    allowed_headers: List[str] = Field(default=["*"], env="ALLOWED_HEADERS")
+    allowed_methods: list[str] = Field(default=["*"], env="ALLOWED_METHODS")
+    allowed_headers: list[str] = Field(default=["*"], env="ALLOWED_HEADERS")
 
     # Rate Limiting
-    rate_limit_requests_per_minute: int = Field(default=60, env="RATE_LIMIT_REQUESTS_PER_MINUTE")
+    rate_limit_requests_per_minute: int = Field(
+        default=60, env="RATE_LIMIT_REQUESTS_PER_MINUTE"
+    )
     rate_limit_burst: int = Field(default=10, env="RATE_LIMIT_BURST")
 
     # External Services
-    claude_api_key: Optional[str] = Field(default=None, env="CLAUDE_API_KEY")
-    mitre_api_url: str = Field(default="https://attack.mitre.org/api/v1", env="MITRE_API_URL")
-    github_token: Optional[str] = Field(default=None, env="GITHUB_TOKEN")
+    claude_api_key: str | None = Field(default=None, env="CLAUDE_API_KEY")
+    mitre_api_url: str = Field(
+        default="https://attack.mitre.org/api/v1", env="MITRE_API_URL"
+    )
+    github_token: str | None = Field(default=None, env="GITHUB_TOKEN")
 
     # Monitoring
     prometheus_metrics: bool = Field(default=True, env="PROMETHEUS_METRICS")
-    jaeger_endpoint: Optional[str] = Field(default=None, env="JAEGER_ENDPOINT")
+    jaeger_endpoint: str | None = Field(default=None, env="JAEGER_ENDPOINT")
+    sentry_dsn: str | None = Field(default=None, env="SENTRY_DSN")
+    sentry_environment: str | None = Field(default=None, env="SENTRY_ENVIRONMENT")
+    sentry_traces_sample_rate: float = Field(default=0.1, env="SENTRY_TRACES_SAMPLE_RATE")
 
     # Feature Flags
     enable_ai_mapping: bool = Field(default=True, env="ENABLE_AI_MAPPING")
     enable_real_time_updates: bool = Field(default=True, env="ENABLE_REAL_TIME_UPDATES")
-    enable_advanced_analytics: bool = Field(default=True, env="ENABLE_ADVANCED_ANALYTICS")
+    enable_advanced_analytics: bool = Field(
+        default=True, env="ENABLE_ADVANCED_ANALYTICS"
+    )
 
     # File Upload Configuration
     max_file_size_mb: int = Field(default=50, env="MAX_FILE_SIZE_MB")
-    allowed_file_types: List[str] = Field(
+    allowed_file_types: list[str] = Field(
         default=[".yml", ".yaml", ".json", ".txt", ".xml"], env="ALLOWED_FILE_TYPES"
     )
 
@@ -101,7 +111,9 @@ class Settings(BaseSettings):
     @validator("database_url")
     def validate_database_url(cls, v: str) -> str:
         """Validate database URL format."""
-        if not v.startswith(("postgresql://", "postgresql+psycopg2://", "postgresql+asyncpg://")):
+        if not v.startswith(
+            ("postgresql://", "postgresql+psycopg2://", "postgresql+asyncpg://")
+        ):
             raise ValueError("Database URL must start with postgresql://")
         return v
 

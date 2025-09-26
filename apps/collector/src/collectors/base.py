@@ -5,9 +5,10 @@ Abstract base collector for all data collection operations.
 import time
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from src.core.logging import get_logger
+
 
 logger = get_logger(__name__)
 
@@ -15,10 +16,11 @@ logger = get_logger(__name__)
 @dataclass
 class CollectionResult:
     """Standard result format for all collectors."""
+
     total_processed: int
     successful: int
     failed: int
-    errors: List[str]
+    errors: list[str]
     execution_time: float
 
 
@@ -34,7 +36,7 @@ class AbstractCollector(ABC):
     5. submit() - Submit processed data to Countermeasure API
     """
 
-    def __init__(self, config: Dict[str, Any]):
+    def __init__(self, config: dict[str, Any]):
         """
         Initialize collector with configuration.
 
@@ -52,7 +54,6 @@ class AbstractCollector(ABC):
         Returns:
             True if authentication successful, False otherwise
         """
-        pass
 
     @abstractmethod
     async def fetch(self) -> Any:
@@ -62,7 +63,6 @@ class AbstractCollector(ABC):
         Returns:
             Raw data from the source
         """
-        pass
 
     @abstractmethod
     async def parse(self, raw_data: Any) -> Any:
@@ -75,7 +75,6 @@ class AbstractCollector(ABC):
         Returns:
             Parsed structured data
         """
-        pass
 
     @abstractmethod
     async def enrich(self, parsed_data: Any) -> Any:
@@ -88,7 +87,6 @@ class AbstractCollector(ABC):
         Returns:
             Enriched data ready for submission
         """
-        pass
 
     @abstractmethod
     async def submit(self, enriched_data: Any) -> CollectionResult:
@@ -101,14 +99,12 @@ class AbstractCollector(ABC):
         Returns:
             Collection result with statistics
         """
-        pass
 
     async def cleanup(self):
         """
         Cleanup resources after collection.
         Override in subclasses if cleanup is needed.
         """
-        pass
 
     async def run(self) -> CollectionResult:
         """
@@ -120,7 +116,9 @@ class AbstractCollector(ABC):
         start_time = time.time()
 
         try:
-            self.logger.info(f"Starting collection pipeline for {self.__class__.__name__}")
+            self.logger.info(
+                f"Starting collection pipeline for {self.__class__.__name__}"
+            )
 
             # Step 1: Authenticate
             if not await self.authenticate():
@@ -129,7 +127,7 @@ class AbstractCollector(ABC):
                     successful=0,
                     failed=0,
                     errors=["Authentication failed"],
-                    execution_time=time.time() - start_time
+                    execution_time=time.time() - start_time,
                 )
 
             # Step 2: Fetch raw data
@@ -159,11 +157,11 @@ class AbstractCollector(ABC):
             return result
 
         except Exception as e:
-            self.logger.error(f"Collection pipeline failed: {str(e)}", exc_info=True)
+            self.logger.error(f"Collection pipeline failed: {e!s}", exc_info=True)
             return CollectionResult(
                 total_processed=0,
                 successful=0,
                 failed=0,
                 errors=[str(e)],
-                execution_time=time.time() - start_time
+                execution_time=time.time() - start_time,
             )

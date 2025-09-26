@@ -1,0 +1,157 @@
+# Countermeasure Platform - Unified Ruff Configuration
+# This configuration is shared across all apps in the monorepo
+
+# Ruff settings
+line-length = 88
+target-version = "py312"
+
+# Include/exclude patterns
+include = ["*.py", "*.pyi"]
+extend-exclude = [
+    ".git",
+    ".mypy_cache",
+    ".pytest_cache",
+    ".ruff_cache",
+    ".venv",
+    "__pycache__",
+    "build",
+    "dist",
+    "docs",
+    "migrations",  # Alembic migrations
+    "alembic/versions",  # Alembic version files
+    "*.egg-info",
+]
+
+# Linting rules
+[lint]
+# Enable these rule categories
+select = [
+    "E",      # pycodestyle errors
+    "W",      # pycodestyle warnings
+    "F",      # Pyflakes
+    "I",      # isort
+    "B",      # flake8-bugbear
+    "C4",     # flake8-comprehensions
+    "UP",     # pyupgrade
+    "SIM",    # flake8-simplify
+    "TCH",    # flake8-type-checking
+    "PTH",    # flake8-use-pathlib
+    "N",      # pep8-naming
+    "RUF",    # Ruff-specific rules
+    "S",      # flake8-bandit (security)
+    "T20",    # flake8-print
+    "RET",    # flake8-return
+    "PIE",    # flake8-pie
+    "ERA",    # eradicate (commented-out code)
+    "PL",     # Pylint
+    "TRY",    # tryceratops
+    "FLY",    # flynt (f-string conversion)
+    "PERF",   # Perflint
+    "FURB",   # refurb
+]
+
+# Disable specific rules that are too strict or not applicable
+ignore = [
+    "E501",    # line too long (handled by formatter)
+    "E712",    # comparison to True/False (sometimes needed)
+    "S101",    # assert statements (needed in tests)
+    "S311",    # random module (not always security-sensitive)
+    "PLR0913", # too many arguments (sometimes necessary)
+    "PLR0912", # too many branches (sometimes necessary)
+    "PLR0915", # too many statements (sometimes necessary)
+    "TRY003",  # avoid long exception messages (too restrictive)
+    "TRY300",  # consider moving to else block (sometimes overkill)
+    "TRY301",  # abstract raise to inner function (sometimes overkill)
+    "N806",    # variable should be lowercase (conflicts with SQLAlchemy)
+    "B008",    # function call in argument defaults (common in FastAPI)
+    "B017",    # bare exception in pytest.raises (sometimes needed)
+    "RUF012",  # mutable class attributes (handled by Pydantic)
+    "TC001",   # move import into TYPE_CHECKING (can break runtime)
+    "TC002",   # move import into TYPE_CHECKING (can break runtime)
+    "TC003",   # move import into TYPE_CHECKING (can break runtime)
+    "PLC0415", # import not at top level (needed in tests and some cases)
+    "ERA001",  # commented out code (Alembic templates have this)
+    "E402",    # module level import not at top (needed in Alembic)
+]
+
+# Per-file ignores
+[lint.per-file-ignores]
+"tests/**/*.py" = [
+    "S101",    # assert statements (needed in tests)
+    "PLR2004", # magic values (common in tests)
+    "TRY301",  # abstract raise (common in tests)
+    "SLF001",  # private member access (needed for testing)
+]
+"migrations/**/*.py" = [
+    "E501",    # line too long (generated code)
+    "F401",    # unused imports (revision references)
+    "N999",    # invalid module name (Alembic naming)
+]
+"alembic/**/*.py" = [
+    "E501",    # line too long (generated code)
+    "F401",    # unused imports (revision references)
+    "N999",    # invalid module name (Alembic naming)
+]
+"scripts/**/*.py" = [
+    "T20",     # print statements (acceptable in scripts)
+    "PLR0913", # many arguments (CLI scripts)
+]
+"__init__.py" = [
+    "F401",    # unused imports (re-exports)
+]
+
+# isort configuration (import sorting)
+[lint.isort]
+case-sensitive = true
+combine-as-imports = true
+force-wrap-aliases = true
+known-first-party = ["src", "countermeasure"]
+known-third-party = []
+lines-after-imports = 2
+order-by-type = false
+relative-imports-order = "closest-to-furthest"
+section-order = [
+    "future",
+    "standard-library",
+    "third-party",
+    "first-party",
+    "local-folder"
+]
+split-on-trailing-comma = true
+
+# flake8-bugbear settings
+[lint.flake8-bugbear]
+extend-immutable-calls = [
+    "fastapi.Depends",
+    "fastapi.Query",
+    "fastapi.Path",
+    "fastapi.Body",
+    "fastapi.Header",
+    "fastapi.Cookie",
+    "pydantic.Field",
+]
+
+# flake8-type-checking settings
+[lint.flake8-type-checking]
+runtime-evaluated-base-classes = [
+    "pydantic.BaseModel",
+    "sqlalchemy.orm.DeclarativeBase",
+]
+
+# Pylint settings
+[lint.pylint]
+max-args = 8
+max-locals = 20
+max-branches = 15
+max-statements = 60
+
+# Formatting settings
+[format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "auto"
+docstring-code-format = true
+docstring-code-line-length = 80
+
+# Note: Ruff respects .gitignore by default

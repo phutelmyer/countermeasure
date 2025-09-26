@@ -2,30 +2,37 @@
 Business logic service for detection management.
 """
 
-from datetime import datetime
-from typing import List, Optional, Dict, Any, Tuple
+from typing import Any
 from uuid import UUID
 
-from sqlalchemy import select, func, and_, or_, delete
+from sqlalchemy import and_, delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from src.core.exceptions import ValidationError, ResourceNotFoundError
+from src.core.exceptions import ResourceNotFoundError, ValidationError
 from src.core.logging import get_logger
 from src.core.rule_confidence import (
-    calculate_rule_confidence_score,
     calculate_rule_content_quality,
-    validate_rule_format
+    validate_rule_format,
 )
 from src.db.models import (
-    Detection, Severity, Category, Tag, MitreTechnique,
-    DetectionCategoryMapping, DetectionTagMapping, DetectionMitreMapping
+    Category,
+    Detection,
+    DetectionCategoryMapping,
+    DetectionMitreMapping,
+    DetectionTagMapping,
+    MitreTechnique,
+    Severity,
+    Tag,
 )
 from src.schemas.detection import (
-    DetectionCreate, DetectionUpdate, DetectionSearchRequest,
-    CategoryCreate, CategoryUpdate, TagCreate, TagUpdate,
-    BulkDetectionOperation, DetectionValidationRequest, DetectionConversionRequest
+    CategoryCreate,
+    DetectionCreate,
+    DetectionSearchRequest,
+    DetectionUpdate,
+    TagCreate,
 )
+
 
 logger = get_logger(__name__)
 
@@ -38,7 +45,7 @@ class DetectionService:
         db: AsyncSession,
         detection_data: DetectionCreate,
         tenant_id: UUID,
-        user_id: UUID
+        user_id: UUID,
     ) -> Detection:
         """
         Create a new detection.
@@ -56,7 +63,9 @@ class DetectionService:
             ValidationError: If validation fails
         """
         # Validate rule content format
-        is_valid, errors = validate_rule_format(detection_data.rule_content, detection_data.rule_format)
+        is_valid, errors = validate_rule_format(
+            detection_data.rule_content, detection_data.rule_format
+        )
         if not is_valid:
             raise ValidationError(f"Detection validation failed: {'; '.join(errors)}")
 
@@ -65,31 +74,36 @@ class DetectionService:
             select(Detection).where(
                 and_(
                     Detection.tenant_id == tenant_id,
-                    Detection.name == detection_data.name
+                    Detection.name == detection_data.name,
                 )
             )
         )
         if existing.scalar_one_or_none():
-            raise ValidationError(f"Detection with name '{detection_data.name}' already exists")
+            raise ValidationError(
+                f"Detection with name '{detection_data.name}' already exists"
+            )
 
         # Verify severity exists
         severity = await db.get(Severity, detection_data.severity_id)
         if not severity:
-            raise ValidationError(f"Severity with ID {detection_data.severity_id} not found")
+            raise ValidationError(
+                f"Severity with ID {detection_data.severity_id} not found"
+            )
 
         # Create the detection
-        detection_dict = detection_data.model_dump(exclude={'category_ids', 'tag_ids', 'mitre_technique_ids'})
+        detection_dict = detection_data.model_dump(
+            exclude={"category_ids", "tag_ids", "mitre_technique_ids"}
+        )
         detection = Detection(
             **detection_dict,
             tenant_id=tenant_id,
             created_by=user_id,
-            updated_by=user_id
+            updated_by=user_id,
         )
 
         # Calculate initial confidence score
         detection.confidence_score = calculate_rule_content_quality(
-            detection_data.rule_content,
-            detection_data.rule_format
+            detection_data.rule_content, detection_data.rule_format
         )
 
         db.add(detection)
@@ -97,15 +111,21 @@ class DetectionService:
 
         # Add category mappings
         if detection_data.category_ids:
-            await DetectionService._add_category_mappings(db, detection.id, detection_data.category_ids, tenant_id)
+            await DetectionService._add_category_mappings(
+                db, detection.id, detection_data.category_ids, tenant_id
+            )
 
         # Add tag mappings
         if detection_data.tag_ids:
-            await DetectionService._add_tag_mappings(db, detection.id, detection_data.tag_ids, tenant_id)
+            await DetectionService._add_tag_mappings(
+                db, detection.id, detection_data.tag_ids, tenant_id
+            )
 
         # Add MITRE technique mappings
         if detection_data.mitre_technique_ids:
-            await DetectionService._add_mitre_mappings(db, detection.id, detection_data.mitre_technique_ids)
+            await DetectionService._add_mitre_mappings(
+                db, detection.id, detection_data.mitre_technique_ids
+            )
 
         await db.commit()
 
@@ -114,9 +134,7 @@ class DetectionService:
 
     @staticmethod
     async def get_detection(
-        db: AsyncSession,
-        detection_id: UUID,
-        tenant_id: UUID
+        db: AsyncSession, detection_id: UUID, tenant_id: UUID
     ) -> Detection:
         """
         Get detection by ID.
@@ -136,16 +154,17 @@ class DetectionService:
             select(Detection)
             .options(
                 selectinload(Detection.severity),
-                selectinload(Detection.category_mappings).selectinload(DetectionCategoryMapping.category),
-                selectinload(Detection.tag_mappings).selectinload(DetectionTagMapping.tag),
-                selectinload(Detection.mitre_mappings).selectinload(DetectionMitreMapping.technique)
+                selectinload(Detection.category_mappings).selectinload(
+                    DetectionCategoryMapping.category
+                ),
+                selectinload(Detection.tag_mappings).selectinload(
+                    DetectionTagMapping.tag
+                ),
+                selectinload(Detection.mitre_mappings).selectinload(
+                    DetectionMitreMapping.technique
+                ),
             )
-            .where(
-                and_(
-                    Detection.id == detection_id,
-                    Detection.tenant_id == tenant_id
-                )
-            )
+            .where(and_(Detection.id == detection_id, Detection.tenant_id == tenant_id))
         )
         detection = result.scalar_one_or_none()
         if not detection:
@@ -159,7 +178,7 @@ class DetectionService:
         detection_id: UUID,
         detection_data: DetectionUpdate,
         tenant_id: UUID,
-        user_id: UUID
+        user_id: UUID,
     ) -> Detection:
         """
         Update detection.
@@ -182,12 +201,19 @@ class DetectionService:
 
         # Validate rule content if provided
         if detection_data.rule_content and detection_data.rule_format:
-            is_valid, errors = validate_rule_format(detection_data.rule_content, detection_data.rule_format)
+            is_valid, errors = validate_rule_format(
+                detection_data.rule_content, detection_data.rule_format
+            )
             if not is_valid:
-                raise ValidationError(f"Detection validation failed: {'; '.join(errors)}")
+                raise ValidationError(
+                    f"Detection validation failed: {'; '.join(errors)}"
+                )
 
         # Update basic fields
-        update_data = detection_data.model_dump(exclude_unset=True, exclude={'category_ids', 'tag_ids', 'mitre_technique_ids'})
+        update_data = detection_data.model_dump(
+            exclude_unset=True,
+            exclude={"category_ids", "tag_ids", "mitre_technique_ids"},
+        )
         for field, value in update_data.items():
             setattr(detection, field, value)
 
@@ -196,21 +222,26 @@ class DetectionService:
         # Recalculate confidence score if content changed
         if detection_data.rule_content or detection_data.rule_format:
             detection.confidence_score = calculate_rule_content_quality(
-                detection.rule_content,
-                detection.rule_format
+                detection.rule_content, detection.rule_format
             )
 
         # Update category mappings
         if detection_data.category_ids is not None:
-            await DetectionService._update_category_mappings(db, detection_id, detection_data.category_ids, tenant_id)
+            await DetectionService._update_category_mappings(
+                db, detection_id, detection_data.category_ids, tenant_id
+            )
 
         # Update tag mappings
         if detection_data.tag_ids is not None:
-            await DetectionService._update_tag_mappings(db, detection_id, detection_data.tag_ids, tenant_id)
+            await DetectionService._update_tag_mappings(
+                db, detection_id, detection_data.tag_ids, tenant_id
+            )
 
         # Update MITRE technique mappings
         if detection_data.mitre_technique_ids is not None:
-            await DetectionService._update_mitre_mappings(db, detection_id, detection_data.mitre_technique_ids)
+            await DetectionService._update_mitre_mappings(
+                db, detection_id, detection_data.mitre_technique_ids
+            )
 
         await db.commit()
 
@@ -219,9 +250,7 @@ class DetectionService:
 
     @staticmethod
     async def delete_detection(
-        db: AsyncSession,
-        detection_id: UUID,
-        tenant_id: UUID
+        db: AsyncSession, detection_id: UUID, tenant_id: UUID
     ) -> None:
         """
         Delete detection.
@@ -244,8 +273,8 @@ class DetectionService:
         search_request: DetectionSearchRequest,
         tenant_id: UUID,
         page: int = 1,
-        per_page: int = 50
-    ) -> Tuple[List[Detection], int]:
+        per_page: int = 50,
+    ) -> tuple[list[Detection], int]:
         """
         Search detections with advanced filtering.
 
@@ -266,7 +295,9 @@ class DetectionService:
             query = query.where(Detection.name.ilike(f"%{search_request.name}%"))
 
         if search_request.description:
-            query = query.where(Detection.description.ilike(f"%{search_request.description}%"))
+            query = query.where(
+                Detection.description.ilike(f"%{search_request.description}%")
+            )
 
         if search_request.rule_format:
             query = query.where(Detection.rule_format == search_request.rule_format)
@@ -281,13 +312,19 @@ class DetectionService:
             query = query.where(Detection.visibility == search_request.visibility)
 
         if search_request.performance_impact:
-            query = query.where(Detection.performance_impact == search_request.performance_impact)
+            query = query.where(
+                Detection.performance_impact == search_request.performance_impact
+            )
 
         if search_request.confidence_min is not None:
-            query = query.where(Detection.confidence_score >= search_request.confidence_min)
+            query = query.where(
+                Detection.confidence_score >= search_request.confidence_min
+            )
 
         if search_request.confidence_max is not None:
-            query = query.where(Detection.confidence_score <= search_request.confidence_max)
+            query = query.where(
+                Detection.confidence_score <= search_request.confidence_max
+            )
 
         if search_request.created_after:
             query = query.where(Detection.created_at >= search_request.created_after)
@@ -295,12 +332,44 @@ class DetectionService:
         if search_request.created_before:
             query = query.where(Detection.created_at <= search_request.created_before)
 
+        # Filter by severity levels
+        if search_request.severity_levels:
+            query = query.join(Severity).where(
+                Severity.level.in_(search_request.severity_levels)
+            )
+
+        # Filter by category IDs
+        if search_request.category_ids:
+            query = query.join(DetectionCategoryMapping).where(
+                DetectionCategoryMapping.category_id.in_(search_request.category_ids)
+            )
+
+        # Filter by tag IDs
+        if search_request.tag_ids:
+            query = query.join(DetectionTagMapping).where(
+                DetectionTagMapping.tag_id.in_(search_request.tag_ids)
+            )
+
+        # Filter by MITRE technique IDs
+        if search_request.mitre_technique_ids:
+            query = (
+                query.join(DetectionMitreMapping)
+                .join(MitreTechnique)
+                .where(
+                    MitreTechnique.technique_id.in_(search_request.mitre_technique_ids)
+                )
+            )
+
         # Add relationships
         query = query.options(
             selectinload(Detection.severity),
-            selectinload(Detection.category_mappings).selectinload(DetectionCategoryMapping.category),
+            selectinload(Detection.category_mappings).selectinload(
+                DetectionCategoryMapping.category
+            ),
             selectinload(Detection.tag_mappings).selectinload(DetectionTagMapping.tag),
-            selectinload(Detection.mitre_mappings).selectinload(DetectionMitreMapping.technique)
+            selectinload(Detection.mitre_mappings).selectinload(
+                DetectionMitreMapping.technique
+            ),
         )
 
         # Get total count
@@ -320,9 +389,8 @@ class DetectionService:
 
     @staticmethod
     async def validate_detection_content(
-        rule_content: str,
-        rule_format: str
-    ) -> Dict[str, Any]:
+        rule_content: str, rule_format: str
+    ) -> dict[str, Any]:
         """
         Validate detection content and return validation results.
 
@@ -341,15 +409,13 @@ class DetectionService:
             "syntax_errors": errors,
             "warnings": [],
             "suggestions": [],
-            "confidence_score": confidence_score
+            "confidence_score": confidence_score,
         }
 
     # Category management methods
     @staticmethod
     async def create_category(
-        db: AsyncSession,
-        category_data: CategoryCreate,
-        tenant_id: UUID
+        db: AsyncSession, category_data: CategoryCreate, tenant_id: UUID
     ) -> Category:
         """Create a new category."""
         # Build hierarchical path
@@ -364,10 +430,7 @@ class DetectionService:
             level = parent.level + 1
 
         category = Category(
-            **category_data.model_dump(),
-            tenant_id=tenant_id,
-            level=level,
-            path=path
+            **category_data.model_dump(), tenant_id=tenant_id, level=level, path=path
         )
 
         db.add(category)
@@ -375,28 +438,18 @@ class DetectionService:
         return category
 
     @staticmethod
-    async def create_tag(
-        db: AsyncSession,
-        tag_data: TagCreate,
-        tenant_id: UUID
-    ) -> Tag:
+    async def create_tag(db: AsyncSession, tag_data: TagCreate, tenant_id: UUID) -> Tag:
         """Create a new tag."""
         # Check for duplicate names within tenant
         existing = await db.execute(
             select(Tag).where(
-                and_(
-                    Tag.tenant_id == tenant_id,
-                    Tag.name == tag_data.name
-                )
+                and_(Tag.tenant_id == tenant_id, Tag.name == tag_data.name)
             )
         )
         if existing.scalar_one_or_none():
             raise ValidationError(f"Tag with name '{tag_data.name}' already exists")
 
-        tag = Tag(
-            **tag_data.model_dump(),
-            tenant_id=tenant_id
-        )
+        tag = Tag(**tag_data.model_dump(), tenant_id=tenant_id)
 
         db.add(tag)
         await db.commit()
@@ -405,10 +458,7 @@ class DetectionService:
     # Helper methods for relationship management
     @staticmethod
     async def _add_category_mappings(
-        db: AsyncSession,
-        detection_id: UUID,
-        category_ids: List[UUID],
-        tenant_id: UUID
+        db: AsyncSession, detection_id: UUID, category_ids: list[UUID], tenant_id: UUID
     ) -> None:
         """Add category mappings for a detection."""
         for category_id in category_ids:
@@ -417,15 +467,14 @@ class DetectionService:
             if not category or category.tenant_id != tenant_id:
                 continue
 
-            mapping = DetectionCategoryMapping(detection_id=detection_id, category_id=category_id)
+            mapping = DetectionCategoryMapping(
+                detection_id=detection_id, category_id=category_id
+            )
             db.add(mapping)
 
     @staticmethod
     async def _add_tag_mappings(
-        db: AsyncSession,
-        detection_id: UUID,
-        tag_ids: List[UUID],
-        tenant_id: UUID
+        db: AsyncSession, detection_id: UUID, tag_ids: list[UUID], tenant_id: UUID
     ) -> None:
         """Add tag mappings for a detection."""
         for tag_id in tag_ids:
@@ -439,9 +488,7 @@ class DetectionService:
 
     @staticmethod
     async def _add_mitre_mappings(
-        db: AsyncSession,
-        detection_id: UUID,
-        technique_ids: List[str]
+        db: AsyncSession, detection_id: UUID, technique_ids: list[str]
     ) -> None:
         """Add MITRE technique mappings for a detection."""
         for technique_id in technique_ids:
@@ -450,51 +497,55 @@ class DetectionService:
             if not technique:
                 continue
 
-            mapping = DetectionMitreMapping(detection_id=detection_id, technique_id=technique_id)
+            mapping = DetectionMitreMapping(
+                detection_id=detection_id, technique_id=technique_id
+            )
             db.add(mapping)
 
     @staticmethod
     async def _update_category_mappings(
-        db: AsyncSession,
-        detection_id: UUID,
-        category_ids: List[UUID],
-        tenant_id: UUID
+        db: AsyncSession, detection_id: UUID, category_ids: list[UUID], tenant_id: UUID
     ) -> None:
         """Update category mappings for a detection."""
         # Delete existing mappings
         await db.execute(
-            delete(DetectionCategoryMapping).where(DetectionCategoryMapping.detection_id == detection_id)
+            delete(DetectionCategoryMapping).where(
+                DetectionCategoryMapping.detection_id == detection_id
+            )
         )
         # Add new mappings
         if category_ids:
-            await DetectionService._add_category_mappings(db, detection_id, category_ids, tenant_id)
+            await DetectionService._add_category_mappings(
+                db, detection_id, category_ids, tenant_id
+            )
 
     @staticmethod
     async def _update_tag_mappings(
-        db: AsyncSession,
-        detection_id: UUID,
-        tag_ids: List[UUID],
-        tenant_id: UUID
+        db: AsyncSession, detection_id: UUID, tag_ids: list[UUID], tenant_id: UUID
     ) -> None:
         """Update tag mappings for a detection."""
         # Delete existing mappings
         await db.execute(
-            delete(DetectionTagMapping).where(DetectionTagMapping.detection_id == detection_id)
+            delete(DetectionTagMapping).where(
+                DetectionTagMapping.detection_id == detection_id
+            )
         )
         # Add new mappings
         if tag_ids:
-            await DetectionService._add_tag_mappings(db, detection_id, tag_ids, tenant_id)
+            await DetectionService._add_tag_mappings(
+                db, detection_id, tag_ids, tenant_id
+            )
 
     @staticmethod
     async def _update_mitre_mappings(
-        db: AsyncSession,
-        detection_id: UUID,
-        technique_ids: List[str]
+        db: AsyncSession, detection_id: UUID, technique_ids: list[str]
     ) -> None:
         """Update MITRE technique mappings for a detection."""
         # Delete existing mappings
         await db.execute(
-            delete(DetectionMitreMapping).where(DetectionMitreMapping.detection_id == detection_id)
+            delete(DetectionMitreMapping).where(
+                DetectionMitreMapping.detection_id == detection_id
+            )
         )
         # Add new mappings
         if technique_ids:

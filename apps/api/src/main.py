@@ -4,8 +4,8 @@ Configures the application, middleware, routes, and error handling.
 """
 
 import time
+from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
-from typing import AsyncGenerator
 
 from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
@@ -14,11 +14,34 @@ from fastapi.responses import JSONResponse
 
 from src.core.config import settings
 from src.core.exceptions import CountermeasureException
-from src.core.logging import audit_log, get_logger, set_correlation_id, setup_logging
+from src.core.logging import get_logger, set_correlation_id, setup_logging
+
 
 # Initialize logging
 setup_logging()
 logger = get_logger(__name__)
+
+# Initialize Sentry for error tracking
+if settings.sentry_dsn:
+    import sentry_sdk
+    from sentry_sdk.integrations.fastapi import FastApiIntegration
+    from sentry_sdk.integrations.sqlalchemy import SqlalchemyIntegration
+    from sentry_sdk.integrations.asyncio import AsyncioIntegration
+
+    sentry_sdk.init(
+        dsn=settings.sentry_dsn,
+        environment=settings.sentry_environment or settings.environment,
+        integrations=[
+            FastApiIntegration(auto_enabling_integrations=False),
+            SqlalchemyIntegration(),
+            AsyncioIntegration(),
+        ],
+        traces_sample_rate=settings.sentry_traces_sample_rate,
+        send_default_pii=False,  # Don't send sensitive data
+        attach_stacktrace=True,
+        debug=settings.is_development,
+    )
+    logger.info("Sentry error tracking initialized", environment=settings.sentry_environment)
 
 
 @asynccontextmanager
@@ -30,6 +53,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     try:
         # Initialize database and create default tenant
         from src.db.init_db import init_database
+
         await init_database()
 
         logger.info("Application startup completed")
@@ -41,6 +65,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         # Shutdown tasks
         logger.info("Shutting down Countermeasure API")
         from src.db.session import close_db_connections
+
         await close_db_connections()
 
 
@@ -57,9 +82,14 @@ app = FastAPI(
 )
 
 
-# Security and tenant middleware
+# Import all middleware
+from src.middleware.correlation import CorrelationMiddleware
+from src.middleware.metrics import MetricsMiddleware
 from src.middleware.tenant import AuditMiddleware, TenantIsolationMiddleware
 
+# Add middleware in order (last added = first executed)
+app.add_middleware(MetricsMiddleware)
+app.add_middleware(CorrelationMiddleware)
 app.add_middleware(AuditMiddleware)
 app.add_middleware(TenantIsolationMiddleware)
 
@@ -76,38 +106,11 @@ app.add_middleware(
 if settings.is_production:
     app.add_middleware(
         TrustedHostMiddleware,
-        allowed_hosts=["*"]  # TODO: Configure proper allowed hosts
+        allowed_hosts=["*"],  # TODO: Configure proper allowed hosts
     )
 
 
-@app.middleware("http")
-async def correlation_middleware(request: Request, call_next) -> Response:
-    """Add correlation ID to requests and responses."""
-    # Get or create correlation ID
-    correlation_id = request.headers.get("X-Correlation-ID")
-    request_id = set_correlation_id(correlation_id)
-
-    # Process request
-    start_time = time.time()
-    response = await call_next(request)
-    process_time = time.time() - start_time
-
-    # Add correlation ID to response headers
-    response.headers["X-Correlation-ID"] = request_id
-    response.headers["X-Process-Time"] = str(process_time)
-
-    # Log request
-    logger.info(
-        "http_request",
-        method=request.method,
-        url=str(request.url),
-        status_code=response.status_code,
-        process_time=process_time,
-        user_agent=request.headers.get("User-Agent"),
-        ip_address=request.client.host if request.client else None,
-    )
-
-    return response
+# Correlation ID middleware is now handled by CorrelationMiddleware class above
 
 
 @app.middleware("http")
@@ -122,7 +125,9 @@ async def security_headers_middleware(request: Request, call_next) -> Response:
     response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
 
     if settings.is_production:
-        response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+        response.headers["Strict-Transport-Security"] = (
+            "max-age=31536000; includeSubDomains"
+        )
 
     return response
 
@@ -152,7 +157,9 @@ async def countermeasure_exception_handler(
 
 
 @app.exception_handler(500)
-async def internal_server_error_handler(request: Request, exc: Exception) -> JSONResponse:
+async def internal_server_error_handler(
+    request: Request, exc: Exception
+) -> JSONResponse:
     """Handle internal server errors."""
     logger.error("internal_server_error", error=str(exc), exc_info=True)
 
@@ -168,28 +175,7 @@ async def internal_server_error_handler(request: Request, exc: Exception) -> JSO
     )
 
 
-# Health Check Endpoint
-@app.get("/health", tags=["Health"])
-async def health_check() -> dict:
-    """
-    Health check endpoint for monitoring and load balancers.
-
-    Returns:
-        dict: Service health status and metadata
-    """
-    return {
-        "status": "healthy",
-        "service": settings.app_name,
-        "version": settings.app_version,
-        "environment": settings.environment,
-        "timestamp": time.time(),
-        "checks": {
-            "api": "healthy",
-            # TODO: Add database health check
-            # TODO: Add Redis health check
-            # TODO: Add external service health checks
-        }
-    }
+# Health and metrics endpoints moved to dedicated router
 
 
 # Readiness Check Endpoint
@@ -225,22 +211,7 @@ async def liveness_check() -> dict:
     }
 
 
-# Metrics Endpoint (for Prometheus)
-@app.get("/metrics", tags=["Monitoring"])
-async def metrics() -> Response:
-    """
-    Prometheus metrics endpoint.
-
-    Returns:
-        Response: Prometheus-formatted metrics
-    """
-    # TODO: Implement Prometheus metrics collection
-    return Response(
-        content="# HELP countermeasure_info Application info\n"
-                f"# TYPE countermeasure_info gauge\n"
-                f"countermeasure_info{{version=\"{settings.app_version}\",environment=\"{settings.environment}\"}} 1\n",
-        media_type="text/plain"
-    )
+# Metrics endpoint moved to dedicated router
 
 
 # Root endpoint
@@ -262,8 +233,13 @@ async def root() -> dict:
 
 
 # Include API routers
+from src.api.v1.endpoints.metrics import router as metrics_router
 from src.api.v1.router import api_router
 
+# Include metrics and health endpoints at root level
+app.include_router(metrics_router, tags=["Monitoring"])
+
+# Include main API router
 app.include_router(api_router, prefix="/api/v1")
 
 

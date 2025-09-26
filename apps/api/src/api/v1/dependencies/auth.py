@@ -2,20 +2,20 @@
 Authentication and authorization dependencies for FastAPI.
 """
 
-from typing import Optional
 from uuid import UUID
 
 from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import text
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.core.exceptions import AuthenticationError, AuthorizationError
 from src.core.logging import audit_log, get_logger
-from src.core.security import RoleChecker, extract_token_from_header, verify_token
+from src.core.security import RoleChecker, verify_token
 from src.db.models import User
 from src.db.session import get_db
 from src.schemas.auth import UserResponse
+
 
 logger = get_logger(__name__)
 
@@ -25,8 +25,8 @@ security = HTTPBearer(auto_error=False)
 
 async def get_current_user(
     request: Request,
-    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
-    db: AsyncSession = Depends(get_db)
+    credentials: HTTPAuthorizationCredentials | None = Depends(security),
+    db: AsyncSession = Depends(get_db),
 ) -> User:
     """
     Get current authenticated user from JWT token.
@@ -49,13 +49,14 @@ async def get_current_user(
 
         # Get user from database
         from sqlalchemy import select
-        result = await db.execute(
-            select(User).where(User.id == UUID(user_id))
-        )
+
+        result = await db.execute(select(User).where(User.id == UUID(user_id)))
         user = result.scalar_one_or_none()
 
         if not user:
-            logger.warning("authentication_failed", reason="user_not_found", user_id=user_id)
+            logger.warning(
+                "authentication_failed", reason="user_not_found", user_id=user_id
+            )
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="User not found",
@@ -63,7 +64,9 @@ async def get_current_user(
             )
 
         if not user.is_active:
-            logger.warning("authentication_failed", reason="user_inactive", user_id=user_id)
+            logger.warning(
+                "authentication_failed", reason="user_inactive", user_id=user_id
+            )
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="User account is inactive",
@@ -71,7 +74,9 @@ async def get_current_user(
             )
 
         if user.is_locked:
-            logger.warning("authentication_failed", reason="user_locked", user_id=user_id)
+            logger.warning(
+                "authentication_failed", reason="user_locked", user_id=user_id
+            )
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="User account is locked",
@@ -86,11 +91,15 @@ async def get_current_user(
         tenant_id = str(user.tenant_id)
         await db.execute(text(f"SET app.current_tenant_id = '{tenant_id}'"))
 
+        # Populate request state for middleware use
+        request.state.user_id = str(user.id)
+        request.state.tenant_id = tenant_id
+
         logger.debug(
             "user_authenticated",
             user_id=str(user.id),
             tenant_id=tenant_id,
-            role=user.role
+            role=user.role,
         )
 
         return user
@@ -112,7 +121,7 @@ async def get_current_user(
 
 
 async def get_current_active_user(
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ) -> User:
     """
     Get current active user (alias for clarity).
@@ -130,6 +139,7 @@ def require_role(required_role: str):
     Returns:
         Dependency function that checks user role
     """
+
     async def check_role(current_user: User = Depends(get_current_user)) -> User:
         try:
             RoleChecker.check_role(current_user.role, required_role)
@@ -142,8 +152,8 @@ def require_role(required_role: str):
                 success=True,
                 details={
                     "required_role": required_role,
-                    "user_role": current_user.role
-                }
+                    "user_role": current_user.role,
+                },
             )
 
             return current_user
@@ -158,14 +168,11 @@ def require_role(required_role: str):
                 details={
                     "required_role": required_role,
                     "user_role": current_user.role,
-                    "error": str(e)
-                }
+                    "error": str(e),
+                },
             )
 
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail=str(e)
-            )
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))
 
     return check_role
 
@@ -180,6 +187,7 @@ def require_permission(permission: str):
     Returns:
         Dependency function that checks user permission
     """
+
     async def check_permission(current_user: User = Depends(get_current_user)) -> User:
         if not current_user.has_permission(permission):
             audit_log(
@@ -190,13 +198,13 @@ def require_permission(permission: str):
                 success=False,
                 details={
                     "required_permission": permission,
-                    "user_role": current_user.role
-                }
+                    "user_role": current_user.role,
+                },
             )
 
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail=f"Permission '{permission}' required"
+                detail=f"Permission '{permission}' required",
             )
 
         return current_user
@@ -220,19 +228,25 @@ require_write_intelligence = require_permission("write:intelligence")
 
 async def get_optional_user(
     request: Request,
-    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
-    db: AsyncSession = Depends(get_db)
-) -> Optional[User]:
+    credentials: HTTPAuthorizationCredentials | None = Depends(security),
+    db: AsyncSession = Depends(get_db),
+) -> User | None:
     """
     Get current user if authenticated, otherwise return None.
     Useful for endpoints that have different behavior for authenticated vs anonymous users.
     """
     if not credentials:
+        # Ensure request state is clean for unauthenticated requests
+        request.state.user_id = None
+        request.state.tenant_id = None
         return None
 
     try:
         return await get_current_user(request, credentials, db)
     except HTTPException:
+        # Ensure request state is clean for failed authentication
+        request.state.user_id = None
+        request.state.tenant_id = None
         return None
 
 
@@ -243,7 +257,9 @@ async def get_tenant_id(current_user: User = Depends(get_current_user)) -> UUID:
     return current_user.tenant_id
 
 
-async def get_user_response(current_user: User = Depends(get_current_user)) -> UserResponse:
+async def get_user_response(
+    current_user: User = Depends(get_current_user),
+) -> UserResponse:
     """
     Get current user as response schema.
     """

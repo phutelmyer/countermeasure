@@ -6,9 +6,9 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.core.security import create_access_token, verify_password, get_password_hash
-from src.db.models.user import User
-from src.db.models.tenant import Tenant
+from src.core.security import create_access_token, get_password_hash, verify_password
+from src.db.models.system.tenant import Tenant
+from src.db.models.system.user import User
 
 
 class TestAuthenticationEndpoints:
@@ -20,7 +20,7 @@ class TestAuthenticationEndpoints:
         tenant = Tenant(
             name="Test Organization",
             slug="test-org",
-            description="Test tenant for authentication tests"
+            description="Test tenant for authentication tests",
         )
         db.add(tenant)
         await db.commit()
@@ -37,7 +37,7 @@ class TestAuthenticationEndpoints:
             last_name="User",
             role="analyst",
             is_active=True,
-            is_verified=True
+            is_verified=True,
         )
         db.add(user)
         await db.commit()
@@ -45,10 +45,7 @@ class TestAuthenticationEndpoints:
 
     def test_login_success(self, client: TestClient, test_user: User) -> None:
         """Test successful login."""
-        login_data = {
-            "email": "test@example.com",
-            "password": "testpassword123"
-        }
+        login_data = {"email": "test@example.com", "password": "testpassword123"}
 
         response = client.post("/api/v1/auth/login", json=login_data)
 
@@ -68,10 +65,7 @@ class TestAuthenticationEndpoints:
 
     def test_login_invalid_email(self, client: TestClient) -> None:
         """Test login with invalid email."""
-        login_data = {
-            "email": "nonexistent@example.com",
-            "password": "password123"
-        }
+        login_data = {"email": "nonexistent@example.com", "password": "password123"}
 
         response = client.post("/api/v1/auth/login", json=login_data)
 
@@ -80,10 +74,7 @@ class TestAuthenticationEndpoints:
 
     def test_login_invalid_password(self, client: TestClient, test_user: User) -> None:
         """Test login with invalid password."""
-        login_data = {
-            "email": "test@example.com",
-            "password": "wrongpassword"
-        }
+        login_data = {"email": "test@example.com", "password": "wrongpassword"}
 
         response = client.post("/api/v1/auth/login", json=login_data)
 
@@ -96,7 +87,7 @@ class TestAuthenticationEndpoints:
             "email": "newuser@example.com",
             "password": "NewPassword123!",
             "first_name": "New",
-            "last_name": "User"
+            "last_name": "User",
         }
 
         response = client.post("/api/v1/auth/signup", json=signup_data)
@@ -120,7 +111,7 @@ class TestAuthenticationEndpoints:
             "email": "test@example.com",  # Email already exists
             "password": "Password123!",
             "first_name": "Duplicate",
-            "last_name": "User"
+            "last_name": "User",
         }
 
         response = client.post("/api/v1/auth/signup", json=signup_data)
@@ -134,7 +125,7 @@ class TestAuthenticationEndpoints:
             "email": "weakpass@example.com",
             "password": "123",  # Too weak
             "first_name": "Weak",
-            "last_name": "Password"
+            "last_name": "Password",
         }
 
         response = client.post("/api/v1/auth/signup", json=signup_data)
@@ -149,8 +140,8 @@ class TestAuthenticationEndpoints:
             additional_claims={
                 "tenant_id": str(test_user.tenant_id),
                 "role": test_user.role,
-                "email": test_user.email
-            }
+                "email": test_user.email,
+            },
         )
 
         headers = {"Authorization": f"Bearer {token}"}
@@ -184,8 +175,8 @@ class TestAuthenticationEndpoints:
             additional_claims={
                 "tenant_id": str(test_user.tenant_id),
                 "role": test_user.role,
-                "email": test_user.email
-            }
+                "email": test_user.email,
+            },
         )
 
         headers = {"Authorization": f"Bearer {token}"}
@@ -241,10 +232,7 @@ class TestJWTTokens:
     def test_create_access_token_with_claims(self) -> None:
         """Test access token creation with additional claims."""
         user_id = "123e4567-e89b-12d3-a456-426614174000"
-        claims = {
-            "tenant_id": "456e7890-e89b-12d3-a456-426614174000",
-            "role": "admin"
-        }
+        claims = {"tenant_id": "456e7890-e89b-12d3-a456-426614174000", "role": "admin"}
 
         token = create_access_token(subject=user_id, additional_claims=claims)
 
@@ -267,16 +255,16 @@ class TestJWTTokens:
 
     def test_invalid_token_verification(self) -> None:
         """Test verification of invalid token."""
-        from src.core.security import verify_token
         from src.core.exceptions import AuthenticationError
+        from src.core.security import verify_token
 
         with pytest.raises(AuthenticationError):
             verify_token("invalid_token", "access_token")
 
     def test_wrong_token_type(self) -> None:
         """Test verification with wrong token type."""
-        from src.core.security import verify_token, create_refresh_token
         from src.core.exceptions import AuthenticationError
+        from src.core.security import create_refresh_token, verify_token
 
         user_id = "123e4567-e89b-12d3-a456-426614174000"
         refresh_token = create_refresh_token(subject=user_id)

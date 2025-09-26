@@ -2,18 +2,22 @@
 Collection tasks for Celery.
 """
 
+import asyncio
 import os
-from typing import Dict, Any
+from typing import Any
 
-from src.schedulers.celery_app import app
 from src.collectors.detection.sigma import SigmaCollector
 from src.core.logging import get_logger
+from src.schedulers.celery_app import app
+
 
 logger = get_logger(__name__)
 
 
 @app.task(bind=True, retry_delay=60, max_retries=3)
-def collect_sigma_rules(self, api_url: str, email: str = None, password: str = None, **kwargs):
+def collect_sigma_rules(
+    self, api_url: str, email: str = None, password: str = None, **kwargs
+):
     """
     Celery task to collect SIGMA rules.
 
@@ -25,29 +29,31 @@ def collect_sigma_rules(self, api_url: str, email: str = None, password: str = N
     """
     try:
         # Get credentials from environment if not provided
-        email = email or os.getenv('COUNTERMEASURE_EMAIL')
-        password = password or os.getenv('COUNTERMEASURE_PASSWORD')
+        email = email or os.getenv("COUNTERMEASURE_EMAIL")
+        password = password or os.getenv("COUNTERMEASURE_PASSWORD")
 
         if not email or not password:
-            raise ValueError("Email and password must be provided or set in environment variables")
+            raise ValueError(
+                "Email and password must be provided or set in environment variables"
+            )
 
         # Build configuration
         config = {
-            'api_url': api_url,
-            'email': email,
-            'password': password,
-            'repo_url': kwargs.get('repo_url', 'https://github.com/SigmaHQ/sigma.git'),
-            'categories': kwargs.get('categories', []),
-            'limit': kwargs.get('limit'),
-            'batch_size': kwargs.get('batch_size', 50),
-            'dry_run': kwargs.get('dry_run', False)
+            "api_url": api_url,
+            "email": email,
+            "password": password,
+            "repo_url": kwargs.get("repo_url", "https://github.com/SigmaHQ/sigma.git"),
+            "categories": kwargs.get("categories", []),
+            "limit": kwargs.get("limit"),
+            "batch_size": kwargs.get("batch_size", 50),
+            "dry_run": kwargs.get("dry_run", False),
         }
 
         logger.info(f"Starting SIGMA collection task with config: {config}")
 
         # Create and run collector
         collector = SigmaCollector(config)
-        result = await collector.run()
+        result = asyncio.run(collector.run())
 
         # Log results
         logger.info(
@@ -56,30 +62,28 @@ def collect_sigma_rules(self, api_url: str, email: str = None, password: str = N
         )
 
         return {
-            'status': 'success',
-            'total_processed': result.total_processed,
-            'successful': result.successful,
-            'failed': result.failed,
-            'execution_time': result.execution_time,
-            'errors': result.errors[:10]  # Limit error list for task result
+            "status": "success",
+            "total_processed": result.total_processed,
+            "successful": result.successful,
+            "failed": result.failed,
+            "execution_time": result.execution_time,
+            "errors": result.errors[:10],  # Limit error list for task result
         }
 
     except Exception as e:
-        logger.error(f"SIGMA collection task failed: {str(e)}")
+        logger.error(f"SIGMA collection task failed: {e!s}")
         # Retry task if within retry limits
         if self.request.retries < self.max_retries:
-            logger.info(f"Retrying task (attempt {self.request.retries + 1}/{self.max_retries})")
+            logger.info(
+                f"Retrying task (attempt {self.request.retries + 1}/{self.max_retries})"
+            )
             raise self.retry(countdown=60 * (self.request.retries + 1))
 
-        return {
-            'status': 'failed',
-            'error': str(e),
-            'retries': self.request.retries
-        }
+        return {"status": "failed", "error": str(e), "retries": self.request.retries}
 
 
 @app.task
-def collect_custom_rules(config: Dict[str, Any]):
+def collect_custom_rules(config: dict[str, Any]):
     """
     Celery task to collect custom detection rules from various sources.
 
@@ -96,6 +100,6 @@ def collect_custom_rules(config: Dict[str, Any]):
     # - Custom APIs
 
     return {
-        'status': 'not_implemented',
-        'message': 'Custom rule collection not yet implemented'
+        "status": "not_implemented",
+        "message": "Custom rule collection not yet implemented",
     }

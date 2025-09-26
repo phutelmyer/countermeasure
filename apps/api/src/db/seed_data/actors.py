@@ -2,7 +2,8 @@
 Sample actor data for seeding the database.
 """
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
+
 
 # Sample actor data based on real-world threat groups
 actor_samples = [
@@ -20,8 +21,8 @@ actor_samples = [
         "target_countries": ["USA", "GBR", "CAN", "AUS"],
         "target_sectors": ["retail", "hospitality", "financial_services"],
         "suspected_attribution": "Criminal organization",
-        "first_observed": datetime(2015, 1, 1, tzinfo=timezone.utc),
-        "last_observed": datetime(2023, 12, 1, tzinfo=timezone.utc),
+        "first_observed": datetime(2015, 1, 1, tzinfo=UTC),
+        "last_observed": datetime(2023, 12, 1, tzinfo=UTC),
         "status": "active",
         "description": "FIN7 is a financially motivated threat group that has been active since at least 2015. The group is known for targeting retail, hospitality, and financial organizations through spear-phishing campaigns and point-of-sale malware.",
         "summary": "Sophisticated financially motivated group targeting retail and hospitality sectors",
@@ -29,14 +30,17 @@ actor_samples = [
         "external_ids": ["G0046"],
         "references": [
             "https://attack.mitre.org/groups/G0046/",
-            "https://www.fireeye.com/blog/threat-research/2017/04/fin7-phishing-lnk.html"
+            "https://www.fireeye.com/blog/threat-research/2017/04/fin7-phishing-lnk.html",
         ],
         "analyst_notes": "Notable for their use of legitimate tools like PowerShell and WMI for persistence and lateral movement",
         "quality_score": 0.9,
         "is_validated": True,
         "validation_notes": "Validated through multiple threat intelligence sources",
-        "custom_attributes": {"attribution_level": "high", "threat_category": "cybercriminal"},
-        "tags": ["cybercrime", "pos_malware", "spear_phishing", "retail"]
+        "custom_attributes": {
+            "attribution_level": "high",
+            "threat_category": "cybercriminal",
+        },
+        "tags": ["cybercrime", "pos_malware", "spear_phishing", "retail"],
     },
     {
         "name": "FIN8",
@@ -52,8 +56,8 @@ actor_samples = [
         "target_countries": ["USA"],
         "target_sectors": ["hospitality", "retail", "entertainment"],
         "suspected_attribution": "Criminal organization",
-        "first_observed": datetime(2016, 1, 1, tzinfo=timezone.utc),
-        "last_observed": datetime(2023, 6, 1, tzinfo=timezone.utc),
+        "first_observed": datetime(2016, 1, 1, tzinfo=UTC),
+        "last_observed": datetime(2023, 6, 1, tzinfo=UTC),
         "status": "active",
         "description": "FIN8 is a financially motivated threat group known to launch tailored spear-phishing campaigns targeting the hospitality industry since at least 2016.",
         "summary": "Financial threat group targeting hospitality and retail through spear-phishing",
@@ -61,14 +65,17 @@ actor_samples = [
         "external_ids": ["G0061"],
         "references": [
             "https://attack.mitre.org/groups/G0061/",
-            "https://www.fireeye.com/blog/threat-research/2016/05/windows-zero-day-payment-cards.html"
+            "https://www.fireeye.com/blog/threat-research/2016/05/windows-zero-day-payment-cards.html",
         ],
         "analyst_notes": "Known for exploiting zero-day vulnerabilities and targeting point-of-sale systems",
         "quality_score": 0.8,
         "is_validated": True,
         "validation_notes": "Confirmed through incident response engagements",
-        "custom_attributes": {"attribution_level": "medium", "threat_category": "cybercriminal"},
-        "tags": ["cybercrime", "hospitality", "zero_day", "pos_systems"]
+        "custom_attributes": {
+            "attribution_level": "medium",
+            "threat_category": "cybercriminal",
+        },
+        "tags": ["cybercrime", "hospitality", "zero_day", "pos_systems"],
     },
     {
         "name": "APT29",
@@ -84,8 +91,8 @@ actor_samples = [
         "target_countries": ["USA", "GBR", "DEU", "FRA", "NOR"],
         "target_sectors": ["government", "defense", "technology", "healthcare"],
         "suspected_attribution": "Nation-state",
-        "first_observed": datetime(2008, 1, 1, tzinfo=timezone.utc),
-        "last_observed": datetime(2024, 1, 1, tzinfo=timezone.utc),
+        "first_observed": datetime(2008, 1, 1, tzinfo=UTC),
+        "last_observed": datetime(2024, 1, 1, tzinfo=UTC),
         "status": "active",
         "description": "APT29 is a highly sophisticated threat group that has been attributed to Russia's Foreign Intelligence Service (SVR). The group has been observed targeting government, defense, technology, and healthcare organizations.",
         "summary": "Advanced persistent threat group attributed to Russian SVR conducting espionage operations",
@@ -94,14 +101,17 @@ actor_samples = [
         "external_ids": ["G0016"],
         "references": [
             "https://attack.mitre.org/groups/G0016/",
-            "https://www.mandiant.com/resources/blog/unc2452-merged-into-apt29"
+            "https://www.mandiant.com/resources/blog/unc2452-merged-into-apt29",
         ],
         "analyst_notes": "Notable for sophisticated supply chain attacks including SolarWinds compromise",
         "quality_score": 0.95,
         "is_validated": True,
         "validation_notes": "Extensively documented by multiple intelligence agencies",
-        "custom_attributes": {"attribution_level": "high", "threat_category": "nation_state"},
-        "tags": ["nation_state", "espionage", "supply_chain", "apt", "russia"]
+        "custom_attributes": {
+            "attribution_level": "high",
+            "threat_category": "nation_state",
+        },
+        "tags": ["nation_state", "espionage", "supply_chain", "apt", "russia"],
     },
     {
         "name": "Scattered Spider",
@@ -117,8 +127,8 @@ actor_samples = [
         "target_countries": ["USA", "GBR", "CAN"],
         "target_sectors": ["technology", "telecommunications", "financial_services"],
         "suspected_attribution": "Criminal organization",
-        "first_observed": datetime(2022, 1, 1, tzinfo=timezone.utc),
-        "last_observed": datetime(2024, 1, 1, tzinfo=timezone.utc),
+        "first_observed": datetime(2022, 1, 1, tzinfo=UTC),
+        "last_observed": datetime(2024, 1, 1, tzinfo=UTC),
         "status": "active",
         "description": "Scattered Spider is a financially motivated threat group that specializes in social engineering and identity theft attacks, particularly targeting cloud and SaaS environments.",
         "summary": "Modern social engineering focused group targeting cloud infrastructure and SaaS platforms",
@@ -126,14 +136,17 @@ actor_samples = [
         "external_ids": ["UNC3944"],
         "references": [
             "https://www.mandiant.com/resources/blog/scattered-spider-profile",
-            "https://www.cisa.gov/news-events/cybersecurity-advisories/aa23-320a"
+            "https://www.cisa.gov/news-events/cybersecurity-advisories/aa23-320a",
         ],
         "analyst_notes": "Known for sophisticated social engineering attacks against help desks and IT support",
         "quality_score": 0.8,
         "is_validated": True,
         "validation_notes": "Confirmed through multiple incident response cases",
-        "custom_attributes": {"attribution_level": "medium", "threat_category": "cybercriminal"},
-        "tags": ["social_engineering", "cloud", "saas", "identity_theft", "modern"]
+        "custom_attributes": {
+            "attribution_level": "medium",
+            "threat_category": "cybercriminal",
+        },
+        "tags": ["social_engineering", "cloud", "saas", "identity_theft", "modern"],
     },
     {
         "name": "FIN11",
@@ -149,8 +162,8 @@ actor_samples = [
         "target_countries": ["USA", "GBR", "DEU", "FRA"],
         "target_sectors": ["financial_services", "retail", "hospitality"],
         "suspected_attribution": "Criminal organization",
-        "first_observed": datetime(2018, 1, 1, tzinfo=timezone.utc),
-        "last_observed": datetime(2023, 8, 1, tzinfo=timezone.utc),
+        "first_observed": datetime(2018, 1, 1, tzinfo=UTC),
+        "last_observed": datetime(2023, 8, 1, tzinfo=UTC),
         "status": "active",
         "description": "FIN11 is a financially motivated threat group that conducts high-volume spam campaigns and deploys point-of-sale malware to steal payment card data.",
         "summary": "High-volume spam campaign operators targeting payment card data",
@@ -158,14 +171,17 @@ actor_samples = [
         "external_ids": ["G0085"],
         "references": [
             "https://attack.mitre.org/groups/G0085/",
-            "https://www.mandiant.com/resources/blog/fin11-email-campaigns-precursor-to-ransomware"
+            "https://www.mandiant.com/resources/blog/fin11-email-campaigns-precursor-to-ransomware",
         ],
         "analyst_notes": "Often serves as initial access broker for other threat groups including ransomware operators",
         "quality_score": 0.85,
         "is_validated": True,
         "validation_notes": "Tracked across multiple campaigns with high fidelity indicators",
-        "custom_attributes": {"attribution_level": "medium", "threat_category": "cybercriminal"},
-        "tags": ["cybercrime", "spam", "initial_access", "payment_cards"]
+        "custom_attributes": {
+            "attribution_level": "medium",
+            "threat_category": "cybercriminal",
+        },
+        "tags": ["cybercrime", "spam", "initial_access", "payment_cards"],
     },
     {
         "name": "APT28",
@@ -179,10 +195,15 @@ actor_samples = [
         "motivations": ["espionage", "intelligence_gathering", "influence_operations"],
         "origin_country": "RUS",
         "target_countries": ["USA", "UKR", "GEO", "DEU", "FRA", "POL"],
-        "target_sectors": ["government", "military", "media", "political_organizations"],
+        "target_sectors": [
+            "government",
+            "military",
+            "media",
+            "political_organizations",
+        ],
         "suspected_attribution": "Nation-state",
-        "first_observed": datetime(2004, 1, 1, tzinfo=timezone.utc),
-        "last_observed": datetime(2024, 1, 1, tzinfo=timezone.utc),
+        "first_observed": datetime(2004, 1, 1, tzinfo=UTC),
+        "last_observed": datetime(2024, 1, 1, tzinfo=UTC),
         "status": "active",
         "description": "APT28 is a threat group that has been attributed to Russia's General Staff Main Intelligence Directorate (GRU). They have been observed targeting government, military, and security organizations.",
         "summary": "Russian GRU-linked group conducting espionage and influence operations globally",
@@ -191,14 +212,24 @@ actor_samples = [
         "external_ids": ["G0007"],
         "references": [
             "https://attack.mitre.org/groups/G0007/",
-            "https://www.mandiant.com/resources/blog/apt28-at-the-center-of-the-storm"
+            "https://www.mandiant.com/resources/blog/apt28-at-the-center-of-the-storm",
         ],
         "analyst_notes": "Notable for election interference operations and targeting of military/defense organizations",
         "quality_score": 0.95,
         "is_validated": True,
         "validation_notes": "Extensively documented by multiple intelligence agencies and security vendors",
-        "custom_attributes": {"attribution_level": "high", "threat_category": "nation_state"},
-        "tags": ["nation_state", "espionage", "military", "election_interference", "gru", "russia"]
+        "custom_attributes": {
+            "attribution_level": "high",
+            "threat_category": "nation_state",
+        },
+        "tags": [
+            "nation_state",
+            "espionage",
+            "military",
+            "election_interference",
+            "gru",
+            "russia",
+        ],
     },
     {
         "name": "Lazarus Group",
@@ -212,10 +243,15 @@ actor_samples = [
         "motivations": ["financial", "espionage", "disruptive"],
         "origin_country": "PRK",
         "target_countries": ["USA", "KOR", "JPN", "BGD", "IDN"],
-        "target_sectors": ["financial_services", "cryptocurrency", "entertainment", "defense"],
+        "target_sectors": [
+            "financial_services",
+            "cryptocurrency",
+            "entertainment",
+            "defense",
+        ],
         "suspected_attribution": "Nation-state",
-        "first_observed": datetime(2009, 1, 1, tzinfo=timezone.utc),
-        "last_observed": datetime(2024, 1, 1, tzinfo=timezone.utc),
+        "first_observed": datetime(2009, 1, 1, tzinfo=UTC),
+        "last_observed": datetime(2024, 1, 1, tzinfo=UTC),
         "status": "active",
         "description": "Lazarus Group is a North Korean state-sponsored cyber group known for conducting destructive attacks, financial theft, and espionage operations globally.",
         "summary": "North Korean state group conducting financial crimes and destructive cyber operations",
@@ -224,14 +260,23 @@ actor_samples = [
         "external_ids": ["G0032"],
         "references": [
             "https://attack.mitre.org/groups/G0032/",
-            "https://www.us-cert.gov/HIDDEN-COBRA-North-Korean-Malicious-Cyber-Activity"
+            "https://www.us-cert.gov/HIDDEN-COBRA-North-Korean-Malicious-Cyber-Activity",
         ],
         "analyst_notes": "Responsible for WannaCry ransomware, Sony Pictures hack, and numerous cryptocurrency thefts",
         "quality_score": 0.95,
         "is_validated": True,
         "validation_notes": "Attributed by multiple government agencies including FBI and CISA",
-        "custom_attributes": {"attribution_level": "high", "threat_category": "nation_state"},
-        "tags": ["nation_state", "financial_crime", "cryptocurrency", "destructive", "north_korea"]
+        "custom_attributes": {
+            "attribution_level": "high",
+            "threat_category": "nation_state",
+        },
+        "tags": [
+            "nation_state",
+            "financial_crime",
+            "cryptocurrency",
+            "destructive",
+            "north_korea",
+        ],
     },
     {
         "name": "APT1",
@@ -247,8 +292,8 @@ actor_samples = [
         "target_countries": ["USA", "CAN", "GBR", "IND"],
         "target_sectors": ["technology", "financial_services", "government", "energy"],
         "suspected_attribution": "Nation-state",
-        "first_observed": datetime(2006, 1, 1, tzinfo=timezone.utc),
-        "last_observed": datetime(2013, 12, 1, tzinfo=timezone.utc),
+        "first_observed": datetime(2006, 1, 1, tzinfo=UTC),
+        "last_observed": datetime(2013, 12, 1, tzinfo=UTC),
         "status": "dormant",
         "description": "APT1 is a Chinese threat group that was first publicly documented by Mandiant in 2013. The group has been attributed to the Chinese PLA Unit 61398.",
         "summary": "Chinese PLA unit conducting long-term espionage campaigns against Western targets",
@@ -257,14 +302,17 @@ actor_samples = [
         "external_ids": ["G0006"],
         "references": [
             "https://attack.mitre.org/groups/G0006/",
-            "https://www.mandiant.com/resources/blog/apt1-exposing-one-of-chinas-cyber-espionage-units"
+            "https://www.mandiant.com/resources/blog/apt1-exposing-one-of-chinas-cyber-espionage-units",
         ],
         "analyst_notes": "First major APT group to be publicly attributed to a specific military unit",
         "quality_score": 0.9,
         "is_validated": True,
         "validation_notes": "Extensively documented in the landmark Mandiant APT1 report",
-        "custom_attributes": {"attribution_level": "high", "threat_category": "nation_state"},
-        "tags": ["nation_state", "espionage", "intellectual_property", "pla", "china"]
+        "custom_attributes": {
+            "attribution_level": "high",
+            "threat_category": "nation_state",
+        },
+        "tags": ["nation_state", "espionage", "intellectual_property", "pla", "china"],
     },
     {
         "name": "APT40",
@@ -280,8 +328,8 @@ actor_samples = [
         "target_countries": ["USA", "NOR", "AUS", "MYS", "KHM"],
         "target_sectors": ["maritime", "healthcare", "government", "biomedical"],
         "suspected_attribution": "Nation-state",
-        "first_observed": datetime(2013, 1, 1, tzinfo=timezone.utc),
-        "last_observed": datetime(2024, 1, 1, tzinfo=timezone.utc),
+        "first_observed": datetime(2013, 1, 1, tzinfo=UTC),
+        "last_observed": datetime(2024, 1, 1, tzinfo=UTC),
         "status": "active",
         "description": "APT40 is a Chinese state-sponsored group that focuses on maritime industries, healthcare, and biomedical research, particularly targeting intellectual property.",
         "summary": "Chinese MSS group targeting maritime and healthcare sectors for intelligence collection",
@@ -290,14 +338,17 @@ actor_samples = [
         "external_ids": ["G0065"],
         "references": [
             "https://attack.mitre.org/groups/G0065/",
-            "https://www.justice.gov/opa/pr/four-chinese-nationals-working-ministry-state-security-charged-global-computer-intrusion"
+            "https://www.justice.gov/opa/pr/four-chinese-nationals-working-ministry-state-security-charged-global-computer-intrusion",
         ],
         "analyst_notes": "Notable for targeting maritime industries and COVID-19 research during the pandemic",
         "quality_score": 0.9,
         "is_validated": True,
         "validation_notes": "Multiple indictments and government attributions available",
-        "custom_attributes": {"attribution_level": "high", "threat_category": "nation_state"},
-        "tags": ["nation_state", "espionage", "maritime", "healthcare", "mss", "china"]
+        "custom_attributes": {
+            "attribution_level": "high",
+            "threat_category": "nation_state",
+        },
+        "tags": ["nation_state", "espionage", "maritime", "healthcare", "mss", "china"],
     },
     {
         "name": "MuddyWater",
@@ -313,8 +364,8 @@ actor_samples = [
         "target_countries": ["USA", "SAU", "TUR", "PAK", "IRQ"],
         "target_sectors": ["government", "telecommunications", "defense"],
         "suspected_attribution": "Nation-state",
-        "first_observed": datetime(2017, 1, 1, tzinfo=timezone.utc),
-        "last_observed": datetime(2024, 1, 1, tzinfo=timezone.utc),
+        "first_observed": datetime(2017, 1, 1, tzinfo=UTC),
+        "last_observed": datetime(2024, 1, 1, tzinfo=UTC),
         "status": "active",
         "description": "MuddyWater is an Iranian threat group that has been active since at least 2017, targeting government and telecommunications organizations in the Middle East.",
         "summary": "Iranian intelligence group conducting regional espionage operations",
@@ -323,15 +374,18 @@ actor_samples = [
         "external_ids": ["G0069"],
         "references": [
             "https://attack.mitre.org/groups/G0069/",
-            "https://www.cisa.gov/news-events/cybersecurity-advisories/aa22-055a"
+            "https://www.cisa.gov/news-events/cybersecurity-advisories/aa22-055a",
         ],
         "analyst_notes": "Known for using living-off-the-land techniques and PowerShell-based attacks",
         "quality_score": 0.85,
         "is_validated": True,
         "validation_notes": "Documented by multiple intelligence agencies and security vendors",
-        "custom_attributes": {"attribution_level": "high", "threat_category": "nation_state"},
-        "tags": ["nation_state", "espionage", "middle_east", "powershell", "iran"]
-    }
+        "custom_attributes": {
+            "attribution_level": "high",
+            "threat_category": "nation_state",
+        },
+        "tags": ["nation_state", "espionage", "middle_east", "powershell", "iran"],
+    },
 ]
 
 
@@ -342,8 +396,8 @@ def get_sample_campaigns():
             "actor_name": "FIN7",
             "name": "Restaurant Chain Campaign 2023",
             "description": "Large-scale spear-phishing campaign targeting restaurant chains",
-            "start_date": datetime(2023, 3, 1, tzinfo=timezone.utc),
-            "end_date": datetime(2023, 8, 31, tzinfo=timezone.utc),
+            "start_date": datetime(2023, 3, 1, tzinfo=UTC),
+            "end_date": datetime(2023, 8, 31, tzinfo=UTC),
             "status": "completed",
             "objectives": ["payment_card_theft", "pos_compromise"],
             "target_sectors": ["hospitality", "retail"],
@@ -353,7 +407,7 @@ def get_sample_campaigns():
             "actor_name": "APT29",
             "name": "Government Targeting Campaign 2024",
             "description": "Sophisticated espionage campaign targeting government agencies",
-            "start_date": datetime(2024, 1, 1, tzinfo=timezone.utc),
+            "start_date": datetime(2024, 1, 1, tzinfo=UTC),
             "end_date": None,
             "status": "active",
             "objectives": ["intelligence_gathering", "persistence"],
@@ -364,13 +418,13 @@ def get_sample_campaigns():
             "actor_name": "Scattered Spider",
             "name": "Cloud Infrastructure Campaign 2023",
             "description": "Social engineering campaign targeting cloud service providers",
-            "start_date": datetime(2023, 6, 1, tzinfo=timezone.utc),
-            "end_date": datetime(2023, 12, 31, tzinfo=timezone.utc),
+            "start_date": datetime(2023, 6, 1, tzinfo=UTC),
+            "end_date": datetime(2023, 12, 31, tzinfo=UTC),
             "status": "completed",
             "objectives": ["credential_theft", "cloud_access"],
             "target_sectors": ["technology", "telecommunications"],
             "target_countries": ["USA", "GBR"],
-        }
+        },
     ]
 
 
@@ -383,8 +437,8 @@ def get_sample_malware_families():
             "aliases": ["Anunak", "FIN7 Backdoor"],
             "family_type": "backdoor",
             "description": "Sophisticated backdoor used by FIN7 for persistent access and data exfiltration",
-            "first_seen": datetime(2015, 6, 1, tzinfo=timezone.utc),
-            "last_seen": datetime(2023, 10, 1, tzinfo=timezone.utc),
+            "first_seen": datetime(2015, 6, 1, tzinfo=UTC),
+            "last_seen": datetime(2023, 10, 1, tzinfo=UTC),
             "platforms": ["windows"],
             "capabilities": ["persistence", "command_execution", "data_exfiltration"],
         },
@@ -394,8 +448,8 @@ def get_sample_malware_families():
             "aliases": ["CosmicDuke", "EuroAPT"],
             "family_type": "backdoor",
             "description": "Advanced backdoor used by APT29 for espionage operations",
-            "first_seen": datetime(2014, 1, 1, tzinfo=timezone.utc),
-            "last_seen": datetime(2023, 12, 1, tzinfo=timezone.utc),
+            "first_seen": datetime(2014, 1, 1, tzinfo=UTC),
+            "last_seen": datetime(2023, 12, 1, tzinfo=UTC),
             "platforms": ["windows", "linux"],
             "capabilities": ["persistence", "credential_theft", "lateral_movement"],
         },
@@ -405,9 +459,9 @@ def get_sample_malware_families():
             "aliases": ["DataSpider", "InfoStealer"],
             "family_type": "infostealer",
             "description": "Information stealer focused on cloud credentials and browser data",
-            "first_seen": datetime(2022, 8, 1, tzinfo=timezone.utc),
-            "last_seen": datetime(2024, 1, 1, tzinfo=timezone.utc),
+            "first_seen": datetime(2022, 8, 1, tzinfo=UTC),
+            "last_seen": datetime(2024, 1, 1, tzinfo=UTC),
             "platforms": ["windows", "macos"],
             "capabilities": ["credential_theft", "browser_hijacking", "token_theft"],
-        }
+        },
     ]
